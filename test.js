@@ -1,0 +1,1 @@
+const Facturapi = require('facturapi').default; const f = new Facturapi('sk_test_hR1LwM4p2vYZQkx3bXq5V8j6NBy8WKDn79'); f.catalogs.searchProducts({ q: 'computadora' }).then(res => console.log(res)).catch(e => console.error(e));
