@@ -303,9 +303,10 @@ export class PosController {
   @Post('facturar/:idVenta')
   facturarVenta(
     @Param('idVenta') idVenta: number,
-    @Body() payload: { rfc: string, razonSocial: string, cp: string, regimen: string, usoCfdi: string, apiKey: string }
+    @Body() payload: { rfc: string, razonSocial: string, cp: string, regimen: string, usoCfdi: string, formaPago: string, metodoPago: string }
   ) {
-    return this.posService.facturarVenta(idVenta, payload, payload.apiKey);
+    const apiKey = process.env.FACTURAPI_KEY || 'sk_test_...';
+    return this.posService.facturarVenta(idVenta, payload, apiKey);
   }
 
   // -------------------------

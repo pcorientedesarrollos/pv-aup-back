@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Not } from 'typeorm';
 
@@ -75,7 +76,7 @@ export class PosService {
         sucursal: { idSucursal: saved.idSucursal },
         nombreUsuario: payload.usuario.nombreUsuario,
         nombreCompleto: payload.usuario.nombreCompleto || payload.usuario.nombreUsuario,
-        contrasenaHash: payload.usuario.contrasena, // En un sistema real debería estar hasheada
+        contrasenaHash: await bcrypt.hash(payload.usuario.contrasena, 10),
         rol: 'Administrador',
         activo: true
       });
@@ -108,7 +109,27 @@ export class PosService {
       where: { nombreUsuario: username, activo: true },
       relations: { sucursal: { empresa: true } }
     });
-    if (!user || user.contrasenaHash !== payload.password) {
+    
+    if (!user) {
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    // Compatibilidad para passwords legacy en texto plano
+    const isLegacyPlain = !user.contrasenaHash.startsWith('$2a$') && !user.contrasenaHash.startsWith('$2b$');
+    let isMatch = false;
+
+    if (isLegacyPlain) {
+      if (user.contrasenaHash === payload.password) {
+        isMatch = true;
+        // Upgrade password to hash silently
+        user.contrasenaHash = await bcrypt.hash(payload.password, 10);
+        await this.usuarioRepo.save(user);
+      }
+    } else {
+      isMatch = await bcrypt.compare(payload.password, user.contrasenaHash);
+    }
+
+    if (!isMatch) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
     const jwtPayload = { username: user.nombreUsuario, sub: user.idUsuario, rol: user.rol, sucursal: user.sucursal?.idSucursal };
@@ -332,7 +353,7 @@ export class PosService {
       sucursal: { idSucursal: payload.idSucursal },
       nombreUsuario: payload.usuario,
       nombreCompleto: payload.nombreCompleto || payload.usuario,
-      contrasenaHash: payload.password, // Plain for now
+      contrasenaHash: await bcrypt.hash(payload.password, 10),
       rol: rolFinal,
       activo: payload.oculto ? false : true,
     });
@@ -345,7 +366,7 @@ export class PosService {
     
     if (payload.usuario) usuario.nombreUsuario = payload.usuario;
     if (payload.nombreCompleto) usuario.nombreCompleto = payload.nombreCompleto;
-    if (payload.password) usuario.contrasenaHash = payload.password;
+    if (payload.password) usuario.contrasenaHash = await bcrypt.hash(payload.password, 10);
     if (payload.idPerfil) usuario.rol = payload.idPerfil == 1 ? 'Administrador' : (payload.idPerfil == 3 ? 'Soporte' : 'Cajero');
     if (payload.rol) usuario.rol = payload.rol;
     if (payload.oculto !== undefined) usuario.activo = payload.oculto ? false : true;
