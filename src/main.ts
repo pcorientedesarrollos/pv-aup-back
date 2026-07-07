@@ -11,7 +11,16 @@ async function bootstrap() {
   // Register global filter
   app.useGlobalFilters(new GlobalExceptionFilter());
 
-  app.enableCors();
+  // CORS: permitir frontend local en dev y el dominio de producción si se configura
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : ['http://localhost:4200', 'http://localhost:4300'];
+  app.enableCors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-sucursal-id', 'x-empresa-id', 'x-usuario-id'],
+  });
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
   
   // Serve uploads folder

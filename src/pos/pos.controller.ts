@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UploadedFiles, Headers, Put, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UploadedFiles, Headers, Put, Query, BadRequestException } from '@nestjs/common';
 import { PosService } from './pos.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -6,11 +6,11 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';
 import { Public } from '../auth/public.decorator';
 
-@Public()
 @Controller('pos')
 export class PosController {
   constructor(private readonly posService: PosService) {}
 
+  @Public()
   @Post('auth/login')
   login(@Body() payload: any) {
     return this.posService.login(payload);
@@ -167,8 +167,13 @@ export class PosController {
   }
 
   @Get('ventas')
-  getVentas(@Headers("x-sucursal-id") idSucursal: string) {
-    return this.posService.getVentas(Number(idSucursal));
+  getVentas(
+    @Headers("x-sucursal-id") idSucursal: string,
+    @Query('folio') folio?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string
+  ) {
+    return this.posService.getVentas(Number(idSucursal), folio, Number(limit) || 100, Number(offset) || 0);
   }
 
   // --- Inventario Unificado ---
@@ -178,10 +183,22 @@ export class PosController {
   }
 
   @Post('inventario/entradas')
-  registrarEntradaInventario(@Headers("x-sucursal-id") idSucursal: string, @Body() payload: any) {
-    // Para simplificar, usamos el idUsuario del payload o 1 por defecto (bypass)
-    const idUsuario = payload.idUsuario || 1;
+  registrarEntradaInventario(@Headers("x-sucursal-id") idSucursal: string, @Headers("x-usuario-id") idUsuarioHeader: string, @Body() payload: any) {
+    const idUsuario = idUsuarioHeader ? Number(idUsuarioHeader) : (payload.idUsuario || 1);
     return this.posService.registrarEntradaInventario(payload, idUsuario, Number(idSucursal));
+  }
+
+  @Post('inventario/entradas/masivo')
+  registrarEntradasInventarioMasivo(@Headers("x-sucursal-id") idSucursal: string, @Headers("x-usuario-id") idUsuarioHeader: string, @Body() body: any) {
+    const idUsuario = idUsuarioHeader ? Number(idUsuarioHeader) : (body.idUsuario || 1);
+    return this.posService.registrarEntradasInventarioMasivo(body.entradas, idUsuario, Number(idSucursal));
+  }
+
+  @Post('inventario/importar-xml')
+  @UseInterceptors(FileInterceptor('xml'))
+  importarXml(@Headers("x-sucursal-id") idSucursal: string, @UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('Archivo XML no proporcionado');
+    return this.posService.parsearXmlFactura(file.buffer.toString('utf-8'), Number(idSucursal));
   }
 
   @Patch('inventario/movimiento/:id')
@@ -201,17 +218,27 @@ export class PosController {
     return this.posService.crearProducto(body);
   }
 
-  // ─── AJUSTE DE STOCK ────────────────────────────────────────────
+  @Post('productos/:id/codigos')
+  agregarCodigoAdicional(@Param('id') id: string, @Body('codigoBarras') codigoBarras: string) {
+    return this.posService.agregarCodigoAdicional(Number(id), codigoBarras);
+  }
+
+  @Delete('productos/:id/codigos/:idCodigo')
+  eliminarCodigoAdicional(@Param('idCodigo') idCodigo: string) {
+    return this.posService.eliminarCodigoAdicional(Number(idCodigo));
+  }
+
+  // ⚖️ AJUSTE DE STOCK ⚖️
   @Post('inventario/ajuste')
-  ajustarStock(@Headers("x-sucursal-id") idSucursal: string, @Body() body: any) {
-    const idUsuario = body.idUsuario || 1;
+  ajustarStock(@Headers("x-sucursal-id") idSucursal: string, @Headers("x-usuario-id") idUsuarioHeader: string, @Body() body: any) {
+    const idUsuario = idUsuarioHeader ? Number(idUsuarioHeader) : (body.idUsuario || 1);
     return this.posService.ajustarStock(body.idProducto, body.stockReal, body.motivo, idUsuario, Number(idSucursal));
   }
 
-  // 📝 REGISTRO DE MERMAS 📝
+  // 🗑️ REGISTRO DE MERMAS 🗑️
   @Post('inventario/merma')
-  registrarMerma(@Headers("x-sucursal-id") idSucursal: string, @Body() body: any) {
-    const idUsuario = body.idUsuario || 1;
+  registrarMerma(@Headers("x-sucursal-id") idSucursal: string, @Headers("x-usuario-id") idUsuarioHeader: string, @Body() body: any) {
+    const idUsuario = idUsuarioHeader ? Number(idUsuarioHeader) : (body.idUsuario || 1);
     return this.posService.registrarMerma(body.idProducto, body.cantidad, body.motivo, idUsuario, Number(idSucursal));
   }
 
@@ -332,6 +359,14 @@ export class PosController {
     return this.posService.parseCsf(file.buffer);
   }
 
+  @Get('utils/buscar-rfc/:rfc')
+  async buscarRfc(@Param('rfc') rfc: string) {
+    if (!rfc || rfc.length < 12) {
+      return { success: false, error: 'RFC inválido' };
+    }
+    return this.posService.buscarRfc(rfc);
+  }
+
   // ═══════════════════════════════════════════════════════
   // PROVEEDORES
   // ═══════════════════════════════════════════════════════
@@ -361,8 +396,14 @@ export class PosController {
   // ═══════════════════════════════════════════════════════
 
   @Get('compras')
-  getCompras(@Headers('x-sucursal-id') idSucursal: string) {
-    return this.posService.getCompras(idSucursal ? Number(idSucursal) : undefined);
+  getCompras(
+    @Headers('x-sucursal-id') idSucursal: string,
+    @Query('idProveedor') idProveedor?: string
+  ) {
+    return this.posService.getCompras(
+      idSucursal ? Number(idSucursal) : undefined,
+      idProveedor ? Number(idProveedor) : undefined
+    );
   }
 
   @Get('compras/:id')

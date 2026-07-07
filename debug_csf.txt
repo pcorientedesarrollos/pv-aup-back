@@ -2,79 +2,85 @@
 
 Página  [1] de [3] 
 CÉDULA DE IDENTIFICACIÓN FISCAL 
-AAMG670310LV1
+SOI210225K23
 Registro Federal de Contribuyentes
-GEYDI HILIANA MARTINA 
-ARGAEZ MANZANERO
+SF OPERADORA 
+INTERNACIONAL
 Nombre, denominación o razón 
 social
-idCIF: 15030518318
+idCIF: 21040270891
 VALIDA TU INFORMACIÓN 
 FISCAL
 CONSTANCIA DE SITUACIÓN FISCAL
 Lugar y Fecha de Emisión
-MERIDA , YUCATAN A 05 DE JUNIO DE 2026
-AAMG670310LV1
+MERIDA , YUCATAN A 11 DE DICIEMBRE DE 2025
+SOI210225K23
 Datos de Identificación del Contribuyente: 
 RFC:
-AAMG670310LV1
-CURP:
-AAMG670310MYNRNY04
-Nombre(s):
-GEYDIHILIANAMARTINA
-PrimerApellido:
-ARGAEZ
-SegundoApellido:
-MANZANERO
+SOI210225K23
+Denominación/RazónSocial:
+SFOPERADORAINTERNACIONAL
+RégimenCapital:
+SOCIEDADANONIMADECAPITALVARIABLE
+NombreComercial:
+SUPERFOOD
 Fechainiciodeoperaciones:
-15DEMAYODE2008
+25DEFEBRERODE2021
 Estatusenel padrón:
 ACTIVO
 Fechadeúltimocambiodeestado:
-15DEMAYODE2008
-NombreComercial:
-GEYDIHILIANAMARTINAARGAEZMANZANERO
+25DEFEBRERODE2021
 Datos del domicilio registrado 
-CódigoPostal:
-97167
-TipodeVialidad:
-AVENIDA(AV.)
-NombredeVialidad:AVENIDAQUETZALCOATLNúmeroExterior:657
-NúmeroInterior:
-A
-Nombredela Colonia:
-EMILIOPORTESGIL
-Nombredela Localidad:NombredelMunicipioo DemarcaciónTerritorial:MERIDA
-Nombredela EntidadFederativa:YUCATANEntreCalle:CALLE12
+CódigoPostal:97204TipodeVialidad:CALLE
+NombredeVialidad:CALLE60AVENIDAPROLONGACIONPASEO
+DEMONTEJO
+NúmeroExterior:NO.1-LOTEVM01A 02SUBCONDOMINIOVM01
+NúmeroInterior:OFICINA314Nombredela Colonia:OTRANOESPECIFICADAENELCATALOGO
+Nombredela Localidad:
+MERIDA
+NombredelMunicipioo DemarcaciónTerritorial:
+MERIDA
+Nombredela EntidadFederativa:YUCATANEntreCalle:3
+Y Calle:
+NA
+Actividades Económicas: 
 
 Página  [2] de [3] 
-Y Calle:CALLE14
-Actividades Económicas: 
 OrdenActividad EconómicaPorcentajeFecha InicioFecha Fin
-1Comercioal pormenordecomputadorasy susaccesorios5115/05/2008
-2Otrosserviciosdeapoyoa losnegocios4901/01/2022
+1Comercioal pormayordecarnesrojas7525/02/2021
+2Comercioal pormenordecarnedeaves1007/08/2023
+5Autotransportelocalconrefrigeracióncuyoradiodeacciónselimitaalárea
+metropolitana,municipioo localidadenqueoperan
+507/08/2023
+4Otroautotransporteforáneodecargageneral507/08/2023
+3Otroautotransportelocaldecargageneral507/08/2023
 Regímenes:  
 RégimenFecha InicioFecha Fin
-Régimen de las Personas Físicas con Actividades Empresariales y Profesionales01/01/2014
+Régimen General de Ley Personas Morales25/02/2021
 Obligaciones: 
 Descripción de la Obligación Descripción VencimientoFecha InicioFecha Fin
-Declaración anual de ISR. Personas Físicas.Amástardarel30deabrildelejercicio
-siguiente.
-15/05/2008
-Declaración informativa de IVA con la anual de ISRConjuntamenteconladeclaraciónanualdel
-ejercicio.
-15/05/2008
-Declaración de proveedores de IVAAmástardarelúltimodíadelmesinmediato
-posterioral periodoquecorresponda.
-15/05/2008
 Pago definitivo mensual de IVA.Amástardareldía17delmesinmediato
 posterioral periodoquecorresponda.
-15/05/2008
-Pago provisional mensual de ISR por actividades empresariales. 
-Régimen de Actividades Empresariales y Profesionales
+25/02/2021
+Declaración de proveedores de IVAAmástardarelúltimodíadelmesinmediato
+posterioral periodoquecorresponda.
+25/02/2021
+Entero de retenciones mensuales de ISR por sueldos y salariosAmástardareldía17delmesinmediato
+posterioral periodoquecorresponda.
+10/01/2022
+Declaración anual de ISR del ejercicio Personas morales.Dentrodelostresmesessiguientesal cierredel
+ejercicio.
+10/01/2022
+Pago provisional mensual de ISR personas morales régimen 
+general
 Amástardareldía17delmesinmediato
 posterioral periodoquecorresponda.
-01/01/2014
+01/04/2022
+Entero de retenciones mensuales de ISR por ingresos asimilados
+a salarios
+Amástardareldía17delmesinmediato
+posterioral periodoquecorresponda.
+07/08/2023
 Susdatospersonalessonincorporadosy protegidosenlossistemasdelSAT,deconformidadconlosLineamientosdeProteccióndeDatos
 Personalesy  condiversasdisposicionesfiscalesy  legalessobreconfidencialidady  proteccióndedatos,a  findeejercerlasfacultades
 conferidasa la autoridadfiscal.
@@ -83,12 +89,12 @@ http://sat.gob.mx
 "Lacorrupcióntieneconsecuencias¡denúnciala!Siconocesalgúnposibleactodecorrupcióno delitopresentaunaquejao denunciaa través
 de:www.sat.gob.mx, denuncias@sat.gob.mx, desdeMéxico:(55)88522222,desdeel extranjero:+ 5588522222,SATmóvilo www.gob.mx/sfp".
 CadenaOriginalSello:
-||2026/06/05 13:04:15|AAMG670310LV1|CONSTANCIA DE SITUACIÓN 
-FISCAL|200001088888800000041|U2FsdGVkX1/OnrM37pKZNY7stZSlMXqBjhOi0QJsdnWgSRoukaRVGMSIeU
-yxo+9X||
+||2025/12/11 15:02:42|SOI210225K23|CONSTANCIA DE SITUACIÓN 
+FISCAL|200001088888800000031|U2FsdGVkX1+qeEo4KijMoGMFlKpsYoIy6XsmcxeMshEopya8CarGsF9uREv
+7cdZt||
 SelloDigital:
-4g+VL2HNOG9VlAWEEDwZeWo+eV+TUPusVSplWTsAu1kE/mYzVfuy29WEDZeHFe67MRx44paR3MR/Q9ul8
-odP406m+vY40JzBV3mraHf8bZv+wJAfCpj8oyxe9lEwxemAFWBPtCDgE3tL5gWSBsMBMEzd0/mAN3uoJLXaxl
-Edjs0=
+J60aau9z09THFZcG7dcNIEI6mCvK+YHX4OlYUyybG6qS+MmaVnbhTysgAKG51gbrgbHEsdjpl35iTZFQ04IqBT
+S8BL0VPfesjDWP2qxyE6g0XlmgdRvOUvgeC3GQfGvnRX0OpFdF3ZSbCI2MmMR5CN50jSRBavxyayZG7Cj9Q
+Ng=
 
 Página  [3] de [3] 

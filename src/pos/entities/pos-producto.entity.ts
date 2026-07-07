@@ -1,6 +1,7 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { PosSucursal } from './pos-sucursal.entity';
 import { PosCategoria } from './pos-categoria.entity';
+import { PosProductoCodigo } from './pos-producto-codigo.entity';
 
 @Entity('pos_productos')
 export class PosProducto {
@@ -53,4 +54,7 @@ export class PosProducto {
   @ManyToOne(() => PosSucursal)
   @JoinColumn({ name: 'id_sucursal' })
   sucursal: PosSucursal;
+
+  @OneToMany(() => PosProductoCodigo, codigo => codigo.producto, { cascade: true })
+  codigosAdicionales: PosProductoCodigo[];
 }

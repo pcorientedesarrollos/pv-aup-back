@@ -5,6 +5,7 @@ import { PosService } from './pos.service';
 
 import { PosCategoria } from './entities/pos-categoria.entity';
 import { PosProducto } from './entities/pos-producto.entity';
+import { PosProductoCodigo } from './entities/pos-producto-codigo.entity';
 import { PosCliente } from './entities/pos-cliente.entity';
 import { PosUsuario } from './entities/pos-usuario.entity';
 import { PosSucursal } from './entities/pos-sucursal.entity';
@@ -28,6 +29,7 @@ import { jwtConstants } from '../auth/constants';
     TypeOrmModule.forFeature([
       PosCategoria,
       PosProducto,
+      PosProductoCodigo,
       PosCliente,
       PosUsuario,
       PosCorteCaja,
