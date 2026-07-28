@@ -1240,7 +1240,7 @@ export class PosService {
       throw new BadRequestException('Esta venta ya fue facturada');
     }
 
-    console.log('Facturama: Simulando Facturacion API...', payload);
+//     void('Facturama: Simulando Facturacion API...', payload);
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     const nuevaFactura = this.facturaRepo.create({
@@ -1284,7 +1284,7 @@ export class PosService {
         description: r.descripcion
       }));
     } catch (e) {
-      console.error('Error in local SAT product search', e);
+//       void('Error in local SAT product search', e);
       return [];
     }
   }
@@ -1308,7 +1308,7 @@ export class PosService {
         name: r.nombre
       }));
     } catch (e) {
-      console.error('Error in local SAT unit search', e);
+//       void('Error in local SAT unit search', e);
       return [];
     }
   }
@@ -1520,7 +1520,7 @@ export class PosService {
 
       return { success: !!rfc, rfc, nombre, cp, regimenFiscal, direccion: direccionCompleta, rawText: text.substring(0, 500) };
     } catch (error) {
-      console.error('Error parseando CSF:', error);
+//       void('Error parseando CSF:', error);
       return { success: false, error: 'No se pudo leer el PDF' };
     }
   }
@@ -2007,11 +2007,11 @@ export class PosService {
 
 
 
-      console.log("=== INICIO TEXTO PDF ===");
+//       void("=== INICIO TEXTO PDF ===");
 
-      console.log(text);
+//       void(text);
 
-      console.log("=== FIN TEXTO PDF ===");
+//       void("=== FIN TEXTO PDF ===");
 
 
 

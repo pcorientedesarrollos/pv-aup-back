@@ -549,7 +549,7 @@ export class PosController {
       res.setHeader('Content-Type', 'application/xml');
       res.send(buffer);
     } catch (e) {
-      console.error('Error proxying the file', e);
+//       void('Error proxying the file', e);
       res.status(500).send('Error proxying the file');
     }
   }
