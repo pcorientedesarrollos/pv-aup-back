@@ -25,6 +25,21 @@ export class PosProveedor {
   @Column({ length: 255, nullable: true })
   direccion: string;
 
+  @Column({ length: 10, nullable: true })
+  cp: string;
+
+  @Column({ length: 10, nullable: true })
+  regimenFiscal: string;
+
+  @Column({ length: 10, nullable: true })
+  usoCfdi: string;
+
+  @Column({ length: 10, nullable: true })
+  formaPago: string;
+
+  @Column({ length: 10, nullable: true })
+  metodoPago: string;
+
   @Column({ default: true })
   activo: boolean;
 

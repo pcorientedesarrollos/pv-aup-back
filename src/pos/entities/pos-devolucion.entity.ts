@@ -32,6 +32,9 @@ export class PosDevolucion {
   @Column({ length: 20, default: 'Total' })
   tipo: string; // 'Total' | 'Parcial'
 
+  @Column({ type: 'text', nullable: true })
+  observaciones: string;
+
   @Column({ type: 'json', nullable: true })
   items: { idProducto: number; nombre: string; cantidad: number; precioUnitario: number }[];
 }

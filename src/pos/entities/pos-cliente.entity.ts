@@ -39,6 +39,9 @@ export class PosCliente {
   @CreateDateColumn({ name: 'fecha_registro' })
   fechaRegistro: Date;
 
+  @Column({ type: 'boolean', default: true })
+  activo: boolean;
+
   @ManyToOne(() => PosSucursal)
   @JoinColumn({ name: 'id_sucursal' })
   sucursal: PosSucursal;

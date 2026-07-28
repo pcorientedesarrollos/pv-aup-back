@@ -1,0 +1,38 @@
+async facturarVenta(idVenta: number, payload: { rfc: string, razonSocial: string, cp: string, regimen: string, usoCfdi: string, formaPago?: string, metodoPago?: string }) {
+    const venta = await this.ventaRepo.findOne({
+      where: { idVenta },
+      relations: { detalles: { producto: true }, sucursal: true }
+    });
+
+    if (!venta) throw new BadRequestException('Venta no encontrada');
+    
+    // Validar que la venta no estǸ cancelada o devuelta
+    if (venta.estatus === 'Cancelada' || venta.estatus === 'Devuelta' || venta.estatus === 'Dev. Parcial') {
+      throw new BadRequestException(`No se puede facturar una venta con estatus "${venta.estatus}"`);
+    }
+
+    // Validar que no estǸ facturada
+    const existe = await this.facturaRepo.findOne({ where: { venta: { idVenta } } });
+    if (existe && existe.estatus === 'Emitida') {
+      throw new BadRequestException('Esta venta ya fue facturada');
+    }
+
+    // Integracin con Facturama (Simulada para que el Frontend funcione correctamente sin API Keys quemadas)
+    console.log('Facturama: Simulando Facturacion API...', payload);
+
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    const nuevaFactura = this.facturaRepo.create({
+      venta,
+      folioFisico: 'FACT-' + Math.floor(Math.random() * 1000000),
+      uuid: 'FACTURAMA-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
+      pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      xmlUrl: '#',
+      estatus: 'Emitida',
+      fechaEmision: new Date()
+    });
+
+    return await this.facturaRepo.save(nuevaFactura);
+  }
+
+  

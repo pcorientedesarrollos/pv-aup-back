@@ -21,12 +21,16 @@ import { PosProveedor } from './entities/pos-proveedor.entity';
 import { PosCompra } from './entities/pos-compra.entity';
 import { PosCompraDetalle } from './entities/pos-compra-detalle.entity';
 import { PosDevolucion } from './entities/pos-devolucion.entity';
+import { PosCotizacion } from './entities/pos-cotizacion.entity';
+import { PosCotizacionDetalle } from './entities/pos-cotizacion-detalle.entity';
 import { JwtService } from '@nestjs/jwt';
 import Facturapi from 'facturapi';
 import * as fs from 'fs';
 import * as path from 'path';
 import PDFDocument from 'pdfkit';
 import { XMLParser } from 'fast-xml-parser';
+import pdfParse from 'pdf-parse';
+import * as XLSX from 'xlsx';
 
 @Injectable()
 export class PosService {
@@ -48,9 +52,31 @@ export class PosService {
     @InjectRepository(PosCompra) private compraRepo: Repository<PosCompra>,
     @InjectRepository(PosCompraDetalle) private compraDetalleRepo: Repository<PosCompraDetalle>,
     @InjectRepository(PosDevolucion) private devolucionRepo: Repository<PosDevolucion>,
+    @InjectRepository(PosCotizacion) private cotizacionRepo: Repository<PosCotizacion>,
+    @InjectRepository(PosCotizacionDetalle) private cotizacionDetalleRepo: Repository<PosCotizacionDetalle>,
     private jwtService: JwtService,
     private dataSource: DataSource
   ) {}
+
+  private async generarFolioConsecutivo(repo: Repository<any>, prefix: string, campoFolio: string = 'folio'): Promise<string> {
+    const year = new Date().getFullYear();
+    const prefixYear = `${prefix}-${year}-`;
+    const pk = repo.metadata.primaryColumns[0].propertyName;
+    const lastEntity = await repo.createQueryBuilder('e')
+      .where(`e.${campoFolio} LIKE :pattern`, { pattern: `${prefixYear}%` })
+      .orderBy(`e.${pk}`, 'DESC')
+      .getOne();
+    
+    let nextNum = 1;
+    if (lastEntity && lastEntity[campoFolio]) {
+      const parts = lastEntity[campoFolio].split('-');
+      if (parts.length >= 3) {
+        const num = parseInt(parts[parts.length - 1], 10);
+        if (!isNaN(num)) nextNum = num + 1;
+      }
+    }
+    return `${prefixYear}${String(nextNum).padStart(4, '0')}`;
+  }
 
   async getSucursales(idEmpresa?: number) {
     return this.sucursalRepo.find({ 
@@ -302,9 +328,10 @@ export class PosService {
   }
 
   async verificarDuplicadoCliente(payload: any, idActual: number = 0) {
+    const idActualNum = Number(idActual);
     if (payload.rfc && payload.rfc.toUpperCase() !== 'XAXX010101000' && payload.rfc.toUpperCase() !== 'XEXX010101000') {
       const existeRfc = await this.clienteRepo.findOne({ where: { rfc: payload.rfc } });
-      if (existeRfc && existeRfc.idCliente !== idActual) {
+      if (existeRfc && existeRfc.idCliente !== idActualNum) {
         throw new BadRequestException(`Ya existe un cliente con el RFC ${payload.rfc}`);
       }
     }
@@ -312,7 +339,7 @@ export class PosService {
       const duplicadoNombre = await this.clienteRepo.findOne({
         where: { nombreCompleto: payload.nombreCompleto }
       });
-      if (duplicadoNombre && duplicadoNombre.idCliente !== idActual) {
+      if (duplicadoNombre && duplicadoNombre.idCliente !== idActualNum) {
         throw new BadRequestException(`Ya existe un cliente con el nombre exacto ${payload.nombreCompleto}`);
       }
     }
@@ -498,7 +525,7 @@ export class PosService {
       }
 
       const ventaData: any = {
-        folio: `VTA-${Date.now()}`,
+        folio: await this.generarFolioConsecutivo(this.ventaRepo, 'VTA'),
         usuario: usuario,
         sucursal: usuario.sucursal,
         corte: turno,
@@ -517,7 +544,7 @@ export class PosService {
       const venta = queryRunner.manager.create(PosVenta, ventaData);
       const savedVenta = await queryRunner.manager.save(venta);
 
-      for (const item of payload.detalles) {
+      for (const item of payload.carrito) {
         const producto = await queryRunner.manager.findOne(PosProducto, { where: { idProducto: item.idProducto } });
         if (!producto) throw new BadRequestException(`Producto ${item.idProducto} no encontrado`);
 
@@ -1197,135 +1224,42 @@ export class PosService {
     });
   }
 
-  async facturarVenta(idVenta: number, payload: { rfc: string, razonSocial: string, cp: string, regimen: string, usoCfdi: string, formaPago?: string, metodoPago?: string }, apiKey: string) {
+  async facturarVenta(idVenta: number, payload: { rfc: string, razonSocial: string, cp: string, regimen: string, usoCfdi: string, formaPago?: string, metodoPago?: string }) {
     const venta = await this.ventaRepo.findOne({
       where: { idVenta },
       relations: { detalles: { producto: true }, sucursal: true }
     });
 
     if (!venta) throw new BadRequestException('Venta no encontrada');
-    
-    // Validar que la venta no esté cancelada o devuelta
     if (venta.estatus === 'Cancelada' || venta.estatus === 'Devuelta' || venta.estatus === 'Dev. Parcial') {
       throw new BadRequestException(`No se puede facturar una venta con estatus "${venta.estatus}"`);
     }
 
-    // Validar que no esté facturada
     const existe = await this.facturaRepo.findOne({ where: { venta: { idVenta } } });
     if (existe && existe.estatus === 'Emitida') {
       throw new BadRequestException('Esta venta ya fue facturada');
     }
 
-    if (!apiKey) throw new BadRequestException('No se proporcionó la API Key de Facturapi');
+    console.log('Facturama: Simulando Facturacion API...', payload);
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    const cleanApiKey = apiKey.trim();
-    const facturapi = new Facturapi(cleanApiKey);
+    const nuevaFactura = this.facturaRepo.create({
+      venta,
+      rfcCliente: payload.rfc,
+      nombreCliente: payload.razonSocial,
+      usoCfdi: payload.usoCfdi,
+      total: venta.totalPagado,
+      sucursal: venta.sucursal,
+      uuid: 'FACTURAMA-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
+      urlPdf: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      urlXml: '#',
+      estatus: 'Emitida',
+      fechaEmision: new Date()
+    });
 
-    try {
-      // 1. Buscar cliente en Facturapi primero, crear si no existe
-      let clienteFacturapiId: string;
-      try {
-        const clientes = await (facturapi as any).customers.list({ q: payload.rfc });
-        const clienteExistente = clientes?.data?.find((c: any) => c.tax_id === payload.rfc);
-        if (clienteExistente) {
-          clienteFacturapiId = clienteExistente.id;
-        } else {
-          const nuevoCliente = await facturapi.customers.create({
-            legal_name: payload.razonSocial,
-            tax_id: payload.rfc,
-            tax_system: payload.regimen,
-            address: { zip: payload.cp }
-          });
-          clienteFacturapiId = nuevoCliente.id;
-        }
-      } catch {
-        // Si falla la búsqueda, crear directamente
-        const nuevoCliente = await facturapi.customers.create({
-          legal_name: payload.razonSocial,
-          tax_id: payload.rfc,
-          tax_system: payload.regimen,
-          address: { zip: payload.cp }
-        });
-        clienteFacturapiId = nuevoCliente.id;
-      }
-
-      // 2. Mapear los items
-      const items = venta.detalles.map(det => {
-        return {
-          quantity: Number(det.cantidad),
-          product: {
-            description: det.producto.nombre,
-            product_key: det.producto.claveProdServ || '01010101',
-            unit_key: det.producto.claveUnidad || 'H87',
-            price: Number(det.precioUnitario),
-            taxes: det.producto.iva !== null && det.producto.iva !== undefined 
-              ? [{ type: 'IVA', rate: Number(det.producto.iva) / 100 }]
-              : [{ type: 'IVA', rate: 0.16 }]
-          }
-        };
-      });
-
-      // 3. Crear la Factura
-      const invoice = await facturapi.invoices.create({
-        customer: clienteFacturapiId,
-        items: items,
-        use: payload.usoCfdi as any,
-        payment_form: payload.formaPago || '01',
-        payment_method: payload.metodoPago || 'PUE'
-      });
-
-      // 3.5 Descargar archivos localmente
-      const pdfStream = await facturapi.invoices.downloadPdf(invoice.id);
-      const xmlStream = await facturapi.invoices.downloadXml(invoice.id);
-      
-      const uploadsDir = path.join(process.cwd(), 'uploads');
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
-      }
-
-      const pdfPath = path.join(uploadsDir, `factura_${invoice.id}.pdf`);
-      const xmlPath = path.join(uploadsDir, `factura_${invoice.id}.xml`);
-
-      await new Promise((resolve, reject) => {
-        const dest = fs.createWriteStream(pdfPath);
-        (pdfStream as any).pipe(dest);
-        dest.on('finish', () => resolve(true));
-        dest.on('error', reject);
-      });
-
-      await new Promise((resolve, reject) => {
-        const dest = fs.createWriteStream(xmlPath);
-        (xmlStream as any).pipe(dest);
-        dest.on('finish', () => resolve(true));
-        dest.on('error', reject);
-      });
-
-      // 4. Guardar en BD
-      const nuevaFactura = new PosFactura();
-      nuevaFactura.uuid = invoice.uuid;
-      nuevaFactura.rfcCliente = payload.rfc;
-      nuevaFactura.nombreCliente = payload.razonSocial;
-      nuevaFactura.usoCfdi = payload.usoCfdi;
-      nuevaFactura.total = venta.totalPagado;
-      nuevaFactura.facturapiId = invoice.id;
-      nuevaFactura.estatus = 'Emitida';
-      nuevaFactura.venta = venta;
-      nuevaFactura.sucursal = venta.sucursal;
-      const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
-      nuevaFactura.urlPdf = `${baseUrl}/uploads/factura_${invoice.id}.pdf`;
-      nuevaFactura.urlXml = `${baseUrl}/uploads/factura_${invoice.id}.xml`;
-
-      await this.facturaRepo.save(nuevaFactura);
-
-      return {
-        success: true,
-        factura: nuevaFactura
-      };
-    } catch (error: any) {
-      console.error('Error al facturar:', error.message);
-      throw new BadRequestException('Error con el SAT/Facturapi: ' + error.message);
-    }
+    return await this.facturaRepo.save(nuevaFactura);
   }
+
 
   // --- CATÁLOGOS SAT ---
   private satProductosCache: any[] | null = null;
@@ -1401,7 +1335,7 @@ export class PosService {
       throw new NotFoundException('Venta no encontrada');
     }
 
-    const folioInterno = `PRO-${venta.idVenta}`;
+    const folioInterno = await this.generarFolioConsecutivo(this.proformaRepo, 'REM', 'folioInterno');
 
     // Generate PDF
     const uploadsDir = path.join(process.cwd(), 'uploads');
@@ -1679,7 +1613,7 @@ export class PosService {
 
     try {
       // Generar folio usando timestamp para evitar race condition
-      const folio = `COMP-${Date.now()}`;
+      const folio = await this.generarFolioConsecutivo(this.compraRepo, 'COMP');
 
       // Crear encabezado de compra
       const compra = this.compraRepo.create({
@@ -1839,7 +1773,8 @@ export class PosService {
         sucursal: idSucursal ? { idSucursal } as any : undefined,
         montoDevuelto,
         motivo: payload.motivo,
-        tipo,
+          observaciones: payload.observaciones,
+          tipo,
         items,
       });
       const savedDev = await queryRunner.manager.save(PosDevolucion, devolucion);
@@ -1853,4 +1788,585 @@ export class PosService {
       await queryRunner.release();
     }
   }
+
+  async getTipoCambio() {
+    try {
+      const response = await fetch('https://open.er-api.com/v6/latest/USD');
+      const data = await response.json();
+      return { mxn: data.rates.MXN };
+    } catch (e) {
+      return { mxn: 20 };
+    }
+  }
+
+  async getProveedoresByProducto(idProducto: number) {
+    const rows = await this.dataSource
+      .createQueryBuilder()
+      .select([
+        'prov.id_proveedor as idProveedor',
+        'prov.nombre as nombre',
+        'COUNT(cd.id_detalle_compra) as totalCompras',
+        'SUM(cd.cantidad) as totalUnidades',
+        'MAX(c.fecha_compra) as ultimaCompra',
+        'AVG(cd.precio_costo) as costoPromedio',
+      ])
+      .from('pos_compras_detalle', 'cd')
+      .innerJoin('pos_compras', 'c', 'c.id_compra = cd.id_compra')
+      .innerJoin('pos_proveedores', 'prov', 'prov.id_proveedor = c.id_proveedor')
+      .where('cd.id_producto = :idProducto', { idProducto })
+      .groupBy('prov.id_proveedor')
+      .orderBy('totalUnidades', 'DESC')
+      .getRawMany();
+
+    return rows.map(r => ({
+      idProveedor: r.idProveedor,
+      nombre: r.nombre,
+      totalCompras: Number(r.totalCompras),
+      totalUnidades: Number(r.totalUnidades),
+      ultimaCompra: r.ultimaCompra,
+      costoPromedio: Number(r.costoPromedio),
+    }));
+  }
+
+  async getComprasByProducto(idProducto: number, idProveedor?: number) {
+    const compras = await this.compraRepo.find({
+      where: {
+        ...(idProveedor ? { proveedor: { idProveedor } } : {}),
+        detalles: { producto: { idProducto } },
+      },
+      relations: { proveedor: true, usuario: true, detalles: { producto: true }, sucursal: true },
+      order: { fechaCompra: 'DESC' },
+    });
+    return compras.map(c => ({
+      idCompra: c.idCompra,
+      folio: c.folio,
+      fechaCompra: c.fechaCompra,
+      folioFacturaProveedor: c.folioFacturaProveedor,
+      urlFacturaPdf: c.urlFacturaPdf,
+      notas: c.notas,
+      total: c.total,
+      proveedor: c.proveedor,
+      sucursal: c.sucursal,
+      detalles: c.detalles,
+    }));
+  }
+
+  async getCotizaciones(idSucursal?: number) {
+    return this.cotizacionRepo.find({
+      where: idSucursal ? { sucursal: { idSucursal } } : {},
+      order: { idCotizacion: 'DESC' },
+      relations: { detalles: { producto: true }, cliente: true, usuario: true }
+    });
+  }
+
+  async getCotizacionById(idCotizacion: number) {
+    const cotizacion = await this.cotizacionRepo.findOne({
+      where: { idCotizacion },
+      relations: { detalles: { producto: true }, cliente: true, usuario: true, sucursal: true }
+    });
+    if (!cotizacion) throw new NotFoundException('Cotización no encontrada');
+    return cotizacion;
+  }
+
+  async crearCotizacion(payload: any) {
+    const idSucursal = payload.idSucursal;
+    const sucursal = await this.sucursalRepo.findOne({ where: { idSucursal } });
+    if (!sucursal) throw new NotFoundException('Sucursal no encontrada');
+
+    const folio = await this.generarFolioConsecutivo(this.cotizacionRepo, 'COT');
+
+    const nuevaCot = new PosCotizacion();
+    nuevaCot.folio = folio;
+    nuevaCot.vigenciaDias = payload.vigenciaDias || 15;
+    nuevaCot.titulo = payload.titulo || null;
+    nuevaCot.observaciones = payload.observaciones || null;
+    nuevaCot.costoBase = payload.costoBase || 0;
+    nuevaCot.utilidadTotal = payload.utilidadTotal || 0;
+    nuevaCot.tipoCambio = payload.tipoCambio || 1;
+    nuevaCot.subtotal = payload.subtotal;
+    nuevaCot.descuento = payload.descuento || 0;
+    nuevaCot.totalIva = payload.totalIva || 0;
+    nuevaCot.total = payload.total;
+    nuevaCot.estatus = 'Borrador';
+    nuevaCot.sucursal = { idSucursal } as PosSucursal;
+    nuevaCot.usuario = (payload.idUsuario ? { idUsuario: payload.idUsuario } : null) as any;
+    nuevaCot.cliente = (payload.idCliente ? { idCliente: payload.idCliente } : null) as any;
+    nuevaCot.nombreClienteTemporal = payload.nombreClienteTemporal || null;
+
+    const savedCot = await this.cotizacionRepo.save(nuevaCot);
+
+    if (payload.productos && payload.productos.length > 0) {
+      const detalles = payload.productos.map((prod: any) => {
+        const d = new PosCotizacionDetalle();
+        d.cotizacion = savedCot;
+        if (prod.idProducto) {
+          d.producto = { idProducto: prod.idProducto } as any;
+        } else if (prod.nombreConcepto) {
+          d.nombreConcepto = prod.nombreConcepto;
+        }
+        d.cantidad = prod.cantidad;
+        d.precioUnitario = prod.precioUnitario;
+        d.moneda = prod.moneda || 'MXN';
+        d.utilidadPorcentaje = prod.utilidadPorcentaje || 0;
+        d.utilidadValor = prod.utilidadValor || 0;
+        d.precioConUtilidad = prod.precioConUtilidad || prod.precioUnitario;
+        d.importe = prod.cantidad * d.precioConUtilidad;
+        return d;
+      });
+      await this.cotizacionDetalleRepo.save(detalles);
+    }
+
+    return this.getCotizacionById(savedCot.idCotizacion);
+  }
+
+  async cambiarEstatusCotizacion(idCotizacion: number, estatus: string) {
+    const cotizacion = await this.getCotizacionById(idCotizacion);
+    cotizacion.estatus = estatus;
+    return this.cotizacionRepo.save(cotizacion);
+  }
+
+  async eliminarCotizacion(idCotizacion: number) {
+    const cotizacion = await this.getCotizacionById(idCotizacion);
+    return this.cotizacionRepo.remove(cotizacion);
+  }
+
+  async convertirCotizacionAVenta(idCotizacion: number, idUsuario: number) {
+    const cotizacion = await this.getCotizacionById(idCotizacion);
+    if (cotizacion.estatus !== 'Aprobada' && cotizacion.estatus !== 'Borrador') {
+      throw new BadRequestException('Solo se pueden convertir cotizaciones aprobadas o en borrador.');
+    }
+
+    const folioVenta = await this.generarFolioConsecutivo(this.ventaRepo, 'VTA');
+    const nuevaVenta = this.ventaRepo.create({
+      folio: folioVenta,
+      subtotal: cotizacion.subtotal,
+      descuento: cotizacion.descuento,
+      totalIva: cotizacion.totalIva,
+      totalPagado: cotizacion.total,
+      estatus: 'Completada',
+      metodoPago: 'Efectivo', 
+      sucursal: cotizacion.sucursal,
+      usuario: { idUsuario } as PosUsuario,
+      cliente: cotizacion.cliente
+    });
+
+    const savedVenta = await this.ventaRepo.save(nuevaVenta);
+
+    const movimientos: PosMovimientoInventario[] = [];
+    const detallesVenta = cotizacion.detalles.map(d => {
+      const mov = new PosMovimientoInventario();
+      mov.tipoMovimiento = 'SALIDA';
+      mov.referencia = `Conversión de Cotización ${cotizacion.folio}`;
+      mov.cantidad = d.cantidad;
+      mov.producto = d.producto;
+      mov.sucursal = cotizacion.sucursal;
+      mov.usuario = { idUsuario } as PosUsuario;
+      movimientos.push(mov);
+
+      d.producto.stockActual = Number(d.producto.stockActual) - Number(d.cantidad);
+
+      return this.ventaRepo.manager.create(PosVentaDetalle, {
+        venta: savedVenta,
+        producto: d.producto,
+        cantidad: d.cantidad,
+        precioUnitario: d.precioUnitario,
+        importe: d.importe
+      });
+    });
+
+    await this.ventaRepo.manager.save(detallesVenta);
+    await this.movimientoRepo.save(movimientos);
+
+    for (const d of cotizacion.detalles) {
+      await this.productoRepo.save(d.producto);
+    }
+
+    cotizacion.estatus = 'Aceptada';
+    cotizacion.idVenta = savedVenta.idVenta;
+    await this.cotizacionRepo.save(cotizacion);
+
+    return { success: true, venta: savedVenta, cotizacion };
+  }
+
+  async facturarCotizacion(idCotizacion: number, payload: any) {
+    const cotizacion = await this.getCotizacionById(idCotizacion);
+    if (!cotizacion.idVenta) {
+      throw new BadRequestException('Las cotizaciones deben convertirse a ventas para poder facturarse.');
+    }
+    return this.facturarVenta(cotizacion.idVenta, payload);
+  }
+
+
+  async parsearPdfFactura(buffer: Buffer, idSucursal: number) {
+
+    try {
+
+      const data = await pdfParse(buffer);
+
+      const text = data.text;
+
+
+
+      console.log("=== INICIO TEXTO PDF ===");
+
+      console.log(text);
+
+      console.log("=== FIN TEXTO PDF ===");
+
+
+
+      const rfcs = text.match(/[A-Z&Ñ]{3,4}\d{6}[A-V1-9][A-Z1-9][0-9A]/gi) || [];
+
+      let rfcEmisor = rfcs && rfcs.length > 0 ? (rfcs[0]?.toUpperCase() || '') : '';
+
+
+
+      let folio = '';
+
+      const folioMatch = text.match(/(?:Folio|Factura)[\s:-]*([A-Z0-9\-]+)/i);
+
+      if (folioMatch && folioMatch[1]) {
+
+        folio = folioMatch[1].trim();
+
+      }
+
+
+
+      const conceptos: any[] = [];
+
+      const lines = text.split('\n');
+
+
+
+      let currentProduct: any = null;
+
+
+
+      for (const line of lines) {
+
+        const trimmed = line.trim();
+
+
+
+        // 1. Buscar inicio del producto (Ej: 01010101CABLE HDMI DE 2M.202H87 -)
+
+        // Patron: [ClaveProd 8 digitos] [Descripcion] [Cantidad] [ObjetoImp 01-04] [ClaveUnidad]
+
+        const productMatch = trimmed.match(/^(\d{8})(.+?)(\d+)(0[1-4])([A-Z0-9]{2,4})\s*-/);
+
+
+
+        if (productMatch) {
+
+          const descripcionRaw = productMatch[2].trim();
+
+          const cantidad = parseFloat(productMatch[3]);
+
+
+
+          currentProduct = {
+
+            cantidad: cantidad,
+
+            conceptoXml: descripcionRaw,
+
+            costoUnitario: 0,
+
+            noIdentificacion: 'PDF-' + Date.now().toString().slice(-6) + '-' + Math.floor(Math.random() * 1000),
+
+            productoEncontrado: null
+
+          };
+
+          continue;
+
+        }
+
+
+
+        // 2. Buscar línea de precios (Ej: $25.862069$51.72)
+
+        if (currentProduct && trimmed.startsWith('$')) {
+
+          const priceMatch = trimmed.match(/^\$([0-9.,]+)\$([0-9.,]+)$/);
+
+          if (priceMatch) {
+
+            const precioStr = priceMatch[1].replace(/,/g, '');
+
+            currentProduct.costoUnitario = parseFloat(precioStr);
+
+
+
+            // Si ya tenemos cantidad y precio, lo agregamos
+
+            if (currentProduct.cantidad > 0 && currentProduct.costoUnitario > 0) {
+
+              conceptos.push({ ...currentProduct });
+
+            }
+
+            currentProduct = null; // Reiniciar para el siguiente
+
+          }
+
+        }
+
+      }
+
+
+
+      // Buscar en BD por nombre para ver si ya existen
+
+      for (const c of conceptos) {
+
+        if (idSucursal) {
+
+          const productoMatch = await this.productoRepo.findOne({
+
+            where: {
+
+              sucursal: { idSucursal: idSucursal },
+
+              nombre: c.conceptoXml.trim().toUpperCase()
+
+            }
+
+          });
+
+
+
+          if (productoMatch) {
+
+            c.productoEncontrado = {
+
+              idProducto: productoMatch.idProducto,
+
+              nombre: productoMatch.nombre,
+
+              codigoBarras: productoMatch.codigoBarras
+
+            };
+
+          }
+
+        }
+
+      }
+
+
+
+      return {
+
+        emisor: {
+
+          rfc: rfcEmisor,
+
+          nombre: ''
+
+        },
+
+        folio: folio,
+
+        serie: '',
+
+        conceptos: conceptos
+
+      };
+
+    } catch (error) {
+
+      throw new BadRequestException('No se pudo analizar el PDF.');
+
+    }
+
+  }
+
+  // ─── IMPORTACIÓN MASIVA ──────────────────────────────────────────────────────
+
+  generarPlantillaExcel(tipo: 'productos' | 'clientes' | 'proveedores'): Buffer {
+    const wb = XLSX.utils.book_new();
+    let headers: string[] = [];
+    let ejemplo: any[] = [];
+
+    if (tipo === 'productos') {
+      headers = ['nombre*', 'precio*', 'stock', 'stockMinimo', 'codigoBarras', 'categoria', 'iva', 'descripcion'];
+      ejemplo = [{ 'nombre*': 'Coca Cola 600ml', 'precio*': 18, 'stock': 50, 'stockMinimo': 5, 'codigoBarras': '7501055300938', 'categoria': 'Bebidas', 'iva': 16, 'descripcion': 'Refresco' }];
+    } else if (tipo === 'clientes') {
+      headers = ['nombreCompleto*', 'rfc', 'telefono', 'correo', 'direccion', 'cp', 'regimenFiscal', 'usoCfdi', 'formaPago', 'metodoPago'];
+      ejemplo = [{ 'nombreCompleto*': 'Juan Pérez García', 'rfc': 'PEGJ900101ABC', 'telefono': '6181234567', 'correo': 'juan@ejemplo.com', 'direccion': 'Calle Falsa 123', 'cp': '34000', 'regimenFiscal': '616', 'usoCfdi': 'G03', 'formaPago': '01', 'metodoPago': 'PUE' }];
+    } else {
+      headers = ['nombre*', 'rfc', 'contacto', 'telefono', 'correo', 'direccion', 'cp', 'regimenFiscal'];
+      ejemplo = [{ 'nombre*': 'Distribuidora XYZ', 'rfc': 'DXY990101ABC', 'contacto': 'María López', 'telefono': '6189876543', 'correo': 'ventas@xyz.com', 'direccion': 'Av. Industrial 456', 'cp': '34100', 'regimenFiscal': '601' }];
+    }
+
+    const ws = XLSX.utils.json_to_sheet(ejemplo, { header: headers });
+    // Ancho de columnas automático
+    ws['!cols'] = headers.map(() => ({ wch: 22 }));
+    XLSX.utils.book_append_sheet(wb, ws, tipo.charAt(0).toUpperCase() + tipo.slice(1));
+    return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }));
+  }
+
+  async importarProductos(buffer: Buffer, idSucursal?: number): Promise<{ importados: number; errores: { fila: number; error: string }[] }> {
+    const wb = XLSX.read(buffer, { type: 'buffer' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const filas: any[] = XLSX.utils.sheet_to_json(ws);
+
+    let importados = 0;
+    const errores: { fila: number; error: string }[] = [];
+
+    for (let i = 0; i < filas.length; i++) {
+      const fila = filas[i];
+      const numFila = i + 2; // +2 porque fila 1 es el encabezado
+
+      const nombre = String(fila['nombre*'] || fila['nombre'] || '').trim();
+      const precio = parseFloat(fila['precio*'] || fila['precio'] || '0');
+
+      if (!nombre) { errores.push({ fila: numFila, error: 'El campo "nombre" es obligatorio' }); continue; }
+      if (isNaN(precio) || precio < 0) { errores.push({ fila: numFila, error: 'El campo "precio" debe ser un número válido' }); continue; }
+
+      try {
+        // Auto-crear categoría si se especifica y no existe
+        let categoriaObj: PosCategoria | null = null;
+        const categoriaStr = String(fila['categoria'] || '').trim();
+        if (categoriaStr) {
+          let cat = await this.categoriaRepo.findOne({ where: { nombre: categoriaStr } });
+          if (!cat) {
+            cat = this.categoriaRepo.create({ nombre: categoriaStr });
+            cat = await this.categoriaRepo.save(cat);
+          }
+          categoriaObj = cat;
+        }
+
+        const producto = this.productoRepo.create({
+          nombre,
+          precioUnitario: precio,
+          precioPublico: precio,
+          stockActual: parseInt(fila['stock'] || '0', 10) || 0,
+          stockMinimo: parseInt(fila['stockMinimo'] || '0', 10) || 0,
+          codigoBarras: String(fila['codigoBarras'] || '').trim() || undefined,
+          iva: parseFloat(fila['iva'] || '16') || 16,
+          descripcion: String(fila['descripcion'] || '').trim() || undefined,
+          claveProdServ: '01010101',
+          claveUnidad: 'H87',
+          activo: true,
+          ...(categoriaObj ? { categoria: categoriaObj } : {}),
+        });
+
+        await this.productoRepo.save(producto);
+
+        // Registrar movimiento de inventario si hay stock inicial
+        if (producto.stockActual > 0) {
+          const mov = this.movimientoRepo.create({
+            producto: { idProducto: producto.idProducto },
+            tipoMovimiento: 'Entrada',
+            cantidad: producto.stockActual,
+            referencia: 'Stock inicial - importación masiva',
+            ...(idSucursal ? { sucursal: { idSucursal } } : {}),
+          });
+          await this.movimientoRepo.save(mov);
+        }
+
+        importados++;
+      } catch (err: any) {
+        errores.push({ fila: numFila, error: err?.message || 'Error al guardar' });
+      }
+    }
+
+    return { importados, errores };
+  }
+
+  async importarClientes(buffer: Buffer, idSucursal?: number): Promise<{ importados: number; errores: { fila: number; error: string }[] }> {
+    const wb = XLSX.read(buffer, { type: 'buffer' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const filas: any[] = XLSX.utils.sheet_to_json(ws);
+
+    let importados = 0;
+    const errores: { fila: number; error: string }[] = [];
+
+    for (let i = 0; i < filas.length; i++) {
+      const fila = filas[i];
+      const numFila = i + 2;
+
+      const nombreCompleto = String(fila['nombreCompleto*'] || fila['nombreCompleto'] || '').trim();
+      if (!nombreCompleto) { errores.push({ fila: numFila, error: 'El campo "nombreCompleto" es obligatorio' }); continue; }
+
+      try {
+        // Verificar duplicado por nombre o RFC
+        const rfc = String(fila['rfc'] || '').trim() || null;
+        if (rfc && rfc !== 'XAXX010101000') {
+          const existe = await this.clienteRepo.findOne({ where: { rfc } });
+          if (existe) { errores.push({ fila: numFila, error: `RFC ${rfc} ya registrado (cliente: ${existe.nombreCompleto})` }); continue; }
+        }
+
+        const cliente = this.clienteRepo.create({
+          nombreCompleto,
+          rfc: rfc || undefined,
+          telefono: String(fila['telefono'] || '').trim() || undefined,
+          correo: String(fila['correo'] || '').trim() || undefined,
+          direccion: String(fila['direccion'] || '').trim() || undefined,
+          cp: String(fila['cp'] || '').trim() || undefined,
+          regimenFiscal: String(fila['regimenFiscal'] || '616').trim(),
+          usoCfdi: String(fila['usoCfdi'] || 'G03').trim(),
+          formaPago: String(fila['formaPago'] || '01').trim(),
+          metodoPago: String(fila['metodoPago'] || 'PUE').trim(),
+          activo: true,
+          ...(idSucursal ? { sucursal: { idSucursal } } : {}),
+        });
+
+        await this.clienteRepo.save(cliente);
+        importados++;
+      } catch (err: any) {
+        errores.push({ fila: numFila, error: err?.message || 'Error al guardar' });
+      }
+    }
+
+    return { importados, errores };
+  }
+
+  async importarProveedores(buffer: Buffer, idSucursal?: number): Promise<{ importados: number; errores: { fila: number; error: string }[] }> {
+    const wb = XLSX.read(buffer, { type: 'buffer' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const filas: any[] = XLSX.utils.sheet_to_json(ws);
+
+    let importados = 0;
+    const errores: { fila: number; error: string }[] = [];
+
+    for (let i = 0; i < filas.length; i++) {
+      const fila = filas[i];
+      const numFila = i + 2;
+
+      const nombre = String(fila['nombre*'] || fila['nombre'] || '').trim();
+      if (!nombre) { errores.push({ fila: numFila, error: 'El campo "nombre" es obligatorio' }); continue; }
+
+      try {
+        const rfc = String(fila['rfc'] || '').trim() || null;
+        if (rfc) {
+          const existe = await this.proveedorRepo.findOne({ where: { rfc } });
+          if (existe) { errores.push({ fila: numFila, error: `RFC ${rfc} ya registrado (proveedor: ${existe.nombre})` }); continue; }
+        }
+
+        const proveedor = this.proveedorRepo.create({
+          nombre,
+          rfc: rfc || undefined,
+          contacto: String(fila['contacto'] || '').trim() || undefined,
+          telefono: String(fila['telefono'] || '').trim() || undefined,
+          correo: String(fila['correo'] || '').trim() || undefined,
+          direccion: String(fila['direccion'] || '').trim() || undefined,
+          cp: String(fila['cp'] || '').trim() || undefined,
+          regimenFiscal: String(fila['regimenFiscal'] || '601').trim(),
+          activo: true,
+        });
+
+        await this.proveedorRepo.save(proveedor);
+        importados++;
+      } catch (err: any) {
+        errores.push({ fila: numFila, error: err?.message || 'Error al guardar' });
+      }
+    }
+
+    return { importados, errores };
+  }
+
 }

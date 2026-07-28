@@ -44,4 +44,16 @@ export class PosFactura {
   @ManyToOne(() => PosSucursal)
   @JoinColumn({ name: 'id_sucursal' })
   sucursal: PosSucursal;
+
+  @Column({ name: 'forma_pago', length: 50, nullable: true })
+  formaPago: string;
+
+  @Column({ name: 'metodo_pago', length: 50, nullable: true })
+  metodoPago: string;
+
+  @Column({ name: 'regimen_fiscal', length: 50, nullable: true })
+  regimenFiscal: string;
+
+  @Column({ name: 'cp', length: 10, nullable: true })
+  cp: string;
 }

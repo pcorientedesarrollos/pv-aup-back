@@ -21,8 +21,10 @@ import { PosProveedor } from './entities/pos-proveedor.entity';
 import { PosCompra } from './entities/pos-compra.entity';
 import { PosCompraDetalle } from './entities/pos-compra-detalle.entity';
 import { PosDevolucion } from './entities/pos-devolucion.entity';
+import { PosCotizacion } from './entities/pos-cotizacion.entity';
+import { PosCotizacionDetalle } from './entities/pos-cotizacion-detalle.entity';
 import { JwtModule } from '@nestjs/jwt';
-import { jwtConstants } from '../auth/constants';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -44,11 +46,17 @@ import { jwtConstants } from '../auth/constants';
       PosProveedor,
       PosCompra,
       PosCompraDetalle,
-      PosDevolucion
+      PosDevolucion,
+      PosCotizacion,
+      PosCotizacionDetalle
     ]),
-    JwtModule.register({
-      secret: jwtConstants.secret,
-      signOptions: { expiresIn: '8h' },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '8h' },
+      }),
     }),
   ],
   controllers: [PosController],
