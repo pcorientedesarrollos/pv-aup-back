@@ -29,6 +29,12 @@ export class PosProducto {
   @Column('decimal', { name: 'precio_mayoreo', precision: 10, scale: 2, nullable: true })
   precioMayoreo: number;
 
+  @Column('decimal', { precision: 10, scale: 2, default: 0.00 })
+  descuento: number;
+
+  @Column('decimal', { name: 'minimo_mayoreo', precision: 10, scale: 2, default: 0.00 })
+  minimoMayoreo: number;
+
   @Column({ name: 'imagen_url', length: 255, nullable: true })
   imagenUrl: string;
 

@@ -196,6 +196,7 @@ export class PosController {
     return this.posService.checkout(payload);
   }
 
+  @Public()
   @Get('ventas')
   getVentas(
     @Headers("x-sucursal-id") idSucursal: string,
@@ -337,12 +338,71 @@ export class PosController {
     return this.posService.getFacturas(Number(idSucursal));
   }
 
+
   @Post('facturar/:idVenta')
   facturarVenta(
     @Param('idVenta') idVenta: string,
     @Body() payload: { rfc: string, razonSocial: string, cp: string, regimen: string, usoCfdi: string, formaPago: string, metodoPago: string }
   ) {
     return this.posService.facturarVenta(Number(idVenta), payload);
+  }
+
+  @Post('facturas/:idFactura/cancelar')
+  cancelarFactura(@Param('idFactura') idFactura: string, @Body() payload: { motivo: string, uuidSustitucion?: string }) {
+    return this.posService.cancelarFactura(Number(idFactura), payload.motivo, payload.uuidSustitucion);
+  }
+
+  @Public()
+  @Get('facturas/:idFacturama/pdf')
+  async descargarFacturaPdf(@Param('idFacturama') idFacturama: string, @Res() res: any) {
+    try {
+      const data = await this.posService.descargarFacturaArchivo(idFacturama, 'pdf');
+      if (data && data.Content) {
+        const buffer = Buffer.from(data.Content, 'base64');
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${idFacturama}.pdf"`);
+        res.send(buffer);
+      } else {
+        res.status(404).send('PDF not found');
+      }
+    } catch (e: any) {
+      const status = e.getStatus ? e.getStatus() : (e.status || 500);
+      res.status(status).send(e.message || 'Error downloading PDF');
+    }
+  }
+
+  @Public()
+  @Get('facturas/:idFacturama/xml')
+  async descargarFacturaXml(@Param('idFacturama') idFacturama: string, @Res() res: any) {
+    try {
+      const data = await this.posService.descargarFacturaArchivo(idFacturama, 'xml');
+      if (data && data.Content) {
+        const buffer = Buffer.from(data.Content, 'base64');
+        res.setHeader('Content-Type', 'application/xml');
+        res.setHeader('Content-Disposition', `attachment; filename="${idFacturama}.xml"`);
+        res.send(buffer);
+      } else {
+        res.status(404).send('XML not found');
+      }
+    } catch (e: any) {
+      const status = e.getStatus ? e.getStatus() : (e.status || 500);
+      res.status(status).send(e.message || 'Error downloading XML');
+    }
+  }
+
+  @Public()
+  @Get('facturas/:idFactura/paquete-cancelacion')
+  async descargarPaqueteCancelacion(@Param('idFactura') idFactura: string, @Res() res: any) {
+    try {
+      const zipBuffer = await this.posService.descargarPaqueteCancelacion(Number(idFactura));
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="Acuse-Factura-PUR-${idFactura}.zip"`);
+      res.send(zipBuffer);
+    } catch (error: any) {
+      console.error(error);
+      const status = error.getStatus ? error.getStatus() : (error.status || 500);
+      res.status(status).send('Error al generar el paquete de cancelación: ' + error.message);
+    }
   }
 
   // -------------------------
