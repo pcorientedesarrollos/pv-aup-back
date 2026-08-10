@@ -2503,13 +2503,19 @@ export class PosService {
       if (isNaN(precio) || precio < 0) { errores.push({ fila: numFila, error: 'El campo "precio" debe ser un número válido' }); continue; }
 
       try {
-        // Auto-crear categoría si se especifica y no existe
+        // Auto-crear categora si se especifica y no existe
         let categoriaObj: PosCategoria | null = null;
         const categoriaStr = String(fila['categoria'] || '').trim();
         if (categoriaStr) {
-          let cat = await this.categoriaRepo.findOne({ where: { nombre: categoriaStr } });
+          let cat = await this.categoriaRepo.createQueryBuilder('cat')
+            .where('LOWER(cat.nombre) = LOWER(:nombre)', { nombre: categoriaStr })
+            .getOne();
+            
           if (!cat) {
-            cat = this.categoriaRepo.create({ nombre: categoriaStr });
+            cat = this.categoriaRepo.create({ 
+              nombre: categoriaStr.toUpperCase(),
+              ...(idSucursal ? { sucursal: { idSucursal } } : {})
+            });
             cat = await this.categoriaRepo.save(cat);
           }
           categoriaObj = cat;
@@ -2528,6 +2534,7 @@ export class PosService {
           claveUnidad: 'H87',
           activo: true,
           ...(categoriaObj ? { categoria: categoriaObj } : {}),
+          ...(idSucursal ? { sucursal: { idSucursal } } : {}),
         });
 
         await this.productoRepo.save(producto);
@@ -2546,7 +2553,13 @@ export class PosService {
 
         importados++;
       } catch (err: any) {
-        errores.push({ fila: numFila, error: err?.message || 'Error al guardar' });
+        let errorMsg = err?.message || 'Error al guardar';
+        if (errorMsg.includes('Duplicate entry')) {
+          const match = errorMsg.match(/Duplicate entry '(.*?)'/);
+          const val = match ? match[1] : '';
+          errorMsg = `El código de barras o clave '${val}' ya existe en el inventario.`;
+        }
+        errores.push({ fila: numFila, error: errorMsg });
       }
     }
 
@@ -2594,7 +2607,13 @@ export class PosService {
         await this.clienteRepo.save(cliente);
         importados++;
       } catch (err: any) {
-        errores.push({ fila: numFila, error: err?.message || 'Error al guardar' });
+        let errorMsg = err?.message || 'Error al guardar';
+        if (errorMsg.includes('Duplicate entry')) {
+          const match = errorMsg.match(/Duplicate entry '(.*?)'/);
+          const val = match ? match[1] : '';
+          errorMsg = `El RFC o dato '${val}' ya está registrado.`;
+        }
+        errores.push({ fila: numFila, error: errorMsg });
       }
     }
 
@@ -2633,12 +2652,19 @@ export class PosService {
           cp: String(fila['cp'] || '').trim() || undefined,
           regimenFiscal: String(fila['regimenFiscal'] || '601').trim(),
           activo: true,
+          ...(idSucursal ? { sucursal: { idSucursal } } : {}),
         });
 
         await this.proveedorRepo.save(proveedor);
         importados++;
       } catch (err: any) {
-        errores.push({ fila: numFila, error: err?.message || 'Error al guardar' });
+        let errorMsg = err?.message || 'Error al guardar';
+        if (errorMsg.includes('Duplicate entry')) {
+          const match = errorMsg.match(/Duplicate entry '(.*?)'/);
+          const val = match ? match[1] : '';
+          errorMsg = `El RFC o dato '${val}' ya está registrado.`;
+        }
+        errores.push({ fila: numFila, error: errorMsg });
       }
     }
 

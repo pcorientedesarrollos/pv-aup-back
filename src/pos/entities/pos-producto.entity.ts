@@ -1,14 +1,15 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
 import { PosSucursal } from './pos-sucursal.entity';
 import { PosCategoria } from './pos-categoria.entity';
 import { PosProductoCodigo } from './pos-producto-codigo.entity';
 
 @Entity('pos_productos')
+@Index('UQ_codigo_sucursal', ['codigoBarras', 'sucursal'], { unique: true })
 export class PosProducto {
   @PrimaryGeneratedColumn({ name: 'id_producto' })
   idProducto: number;
 
-  @Column({ name: 'codigo_barras', length: 100, unique: true, nullable: true })
+  @Column({ name: 'codigo_barras', length: 100, nullable: true })
   codigoBarras: string;
 
   @Column({ length: 255 })
