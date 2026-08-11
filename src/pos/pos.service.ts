@@ -2325,68 +2325,54 @@ export class PosService {
 
 
 
-        // 1. Buscar inicio del producto (Ej: 01010101CABLE HDMI DE 2M.202H87 -)
+                // 1. Buscar inicio del producto
+        const matchAzul = trimmed.match(/^(\d{8})(.+?)(\d+(?:\.\d+)?)(0[1-4])([A-Z0-9]{2,4})\s*-/);
+        const matchRojo = trimmed.match(/^(\d{8})\s*(\d+(?:\.\d+)?)\s*([A-Z0-9]{2,4})\s*-\s*(.+?)(?:\s*\$([0-9.,]+)\s*\$([0-9.,]+))?$/);
 
-        // Patron: [ClaveProd 8 digitos] [Descripcion] [Cantidad] [ObjetoImp 01-04] [ClaveUnidad]
+        let pCantidad = 0;
+        let pConcepto = '';
+        let pPrecio = 0;
+        let productMatch = false;
 
-        const productMatch = trimmed.match(/^(\d{8})(.+?)(\d+)(0[1-4])([A-Z0-9]{2,4})\s*-/);
-
-
-
-        if (productMatch) {
-
-          const descripcionRaw = productMatch[2].trim();
-
-          const cantidad = parseFloat(productMatch[3]);
-
-
-
-          currentProduct = {
-
-            cantidad: cantidad,
-
-            conceptoXml: descripcionRaw,
-
-            costoUnitario: 0,
-
-            noIdentificacion: 'PDF-' + Date.now().toString().slice(-6) + '-' + Math.floor(Math.random() * 1000),
-
-            productoEncontrado: null
-
-          };
-
-          continue;
-
+        if (matchAzul) {
+          productMatch = true;
+          pConcepto = matchAzul[2].trim();
+          pCantidad = parseFloat(matchAzul[3]);
+        } else if (matchRojo) {
+          productMatch = true;
+          pCantidad = parseFloat(matchRojo[2]);
+          pConcepto = matchRojo[4].trim();
+          if (matchRojo[5]) {
+            pPrecio = parseFloat(matchRojo[5].replace(/,/g, ''));
+          }
         }
 
-
-
-        // 2. Buscar línea de precios (Ej: $25.862069$51.72)
-
-        if (currentProduct && trimmed.startsWith('$')) {
-
-          const priceMatch = trimmed.match(/^\$([0-9.,]+)\$([0-9.,]+)$/);
-
-          if (priceMatch) {
-
-            const precioStr = priceMatch[1].replace(/,/g, '');
-
-            currentProduct.costoUnitario = parseFloat(precioStr);
-
-
-
-            // Si ya tenemos cantidad y precio, lo agregamos
-
-            if (currentProduct.cantidad > 0 && currentProduct.costoUnitario > 0) {
-
-              conceptos.push({ ...currentProduct });
-
-            }
-
-            currentProduct = null; // Reiniciar para el siguiente
-
+        if (productMatch) {
+          currentProduct = {
+            cantidad: pCantidad,
+            conceptoXml: pConcepto,
+            costoUnitario: pPrecio,
+            noIdentificacion: 'PDF-' + Date.now().toString().slice(-6) + '-' + Math.floor(Math.random() * 1000),
+            productoEncontrado: null
+          };
+          if (pPrecio > 0 && pCantidad > 0) {
+            conceptos.push({ ...currentProduct });
+            currentProduct = null;
           }
+          continue;
+        }
 
+        // 2. Buscar linea de precios si no vinieron en la misma linea
+        if (currentProduct && trimmed.startsWith('$')) {
+          const priceMatch = trimmed.match(/^\$([0-9.,]+)\s*\$([0-9.,]+)$/);
+          if (priceMatch) {
+            const precioStr = priceMatch[1].replace(/,/g, '');
+            currentProduct.costoUnitario = parseFloat(precioStr);
+            if (currentProduct.cantidad > 0 && currentProduct.costoUnitario > 0) {
+              conceptos.push({ ...currentProduct });
+            }
+            currentProduct = null;
+          }
         }
 
       }
