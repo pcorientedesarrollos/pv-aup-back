@@ -44,6 +44,15 @@ export class PosVenta {
   @Column({ name: 'metodo_pago', length: 50, default: 'Efectivo' })
   metodoPago: string;
 
+  @Column('decimal', { name: 'efectivo', precision: 10, scale: 2, default: 0.00 })
+  efectivo: number;
+
+  @Column('decimal', { name: 'tarjeta', precision: 10, scale: 2, default: 0.00 })
+  tarjeta: number;
+
+  @Column('decimal', { name: 'transferencia', precision: 10, scale: 2, default: 0.00 })
+  transferencia: number;
+
   @Column({ length: 20, default: 'Completada' })
   estatus: string;
 

@@ -43,7 +43,19 @@ export class CheckoutDto {
 
   @IsString()
   @IsOptional()
-  metodoPago?: string;
+  metodoPago?: string; // Mantener por compatibilidad o método principal
+  
+  @IsNumber()
+  @IsOptional()
+  montoEfectivo?: number;
+
+  @IsNumber()
+  @IsOptional()
+  montoTarjeta?: number;
+
+  @IsNumber()
+  @IsOptional()
+  montoTransferencia?: number;
   
   @IsNumber()
   @IsOptional()

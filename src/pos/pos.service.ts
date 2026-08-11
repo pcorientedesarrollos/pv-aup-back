@@ -538,6 +538,9 @@ export class PosService {
         corte: turno,
         totalPagado: payload.totalPagado,
         metodoPago: payload.metodoPago || 'Efectivo',
+        efectivo: payload.montoEfectivo || (payload.metodoPago === 'Efectivo' ? payload.totalPagado : 0),
+        tarjeta: payload.montoTarjeta || (payload.metodoPago === 'Tarjeta' ? payload.totalPagado : 0),
+        transferencia: payload.montoTransferencia || (payload.metodoPago === 'Transferencia' ? payload.totalPagado : 0),
         estatus: 'Completada',
         subtotal: payload.subtotal ?? payload.totalPagado,
         descuento: payload.descuento ?? 0,
@@ -554,13 +557,6 @@ export class PosService {
       for (const item of payload.carrito) {
         const producto = await queryRunner.manager.findOne(PosProducto, { where: { idProducto: item.idProducto } });
         if (!producto) throw new BadRequestException(`Producto ${item.idProducto} no encontrado`);
-
-        // Validar stock suficiente antes de descontar
-        if (Number(producto.stockActual) < Number(item.cantidad)) {
-          throw new BadRequestException(
-            `Stock insuficiente para "${producto.nombre}". Stock disponible: ${producto.stockActual}, solicitado: ${item.cantidad}`
-          );
-        }
 
         const detalle = queryRunner.manager.create(PosVentaDetalle, {
           venta: savedVenta,
