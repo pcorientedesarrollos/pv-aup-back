@@ -583,7 +583,7 @@ export class PosService {
       }
 
       await queryRunner.commitTransaction();
-      return { success: true, message: 'Venta completada', folio: savedVenta.folio };
+      return { success: true, message: 'Venta completada', folio: savedVenta.folio, idVenta: savedVenta.idVenta };
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
