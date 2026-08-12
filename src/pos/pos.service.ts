@@ -618,6 +618,8 @@ export class PosService {
   async getVentasNoFacturadas(idSucursal?: number, limit: number = 100) {
     const qb = this.ventaRepo.createQueryBuilder('venta')
       .leftJoinAndSelect('venta.cliente', 'cliente')
+      .leftJoinAndSelect('venta.detalles', 'detalle')
+      .leftJoinAndSelect('detalle.producto', 'producto')
       .leftJoin('venta.facturas', 'factura', 'factura.estatus != :canceladaEstatus', { canceladaEstatus: 'Cancelada' })
       .where('venta.estatus = :estatus', { estatus: 'Completada' })
       .andWhere('factura.id_factura IS NULL');
