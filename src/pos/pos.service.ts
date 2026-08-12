@@ -615,6 +615,20 @@ export class PosService {
     });
   }
 
+  async getVentasNoFacturadas(idSucursal?: number, limit: number = 100) {
+    const qb = this.ventaRepo.createQueryBuilder('venta')
+      .leftJoinAndSelect('venta.cliente', 'cliente')
+      .leftJoin('venta.facturas', 'factura', 'factura.estatus != :canceladaEstatus', { canceladaEstatus: 'Cancelada' })
+      .where('venta.estatus = :estatus', { estatus: 'Completada' })
+      .andWhere('factura.id_factura IS NULL');
+
+    if (idSucursal) {
+      qb.andWhere('venta.id_sucursal = :idSucursal', { idSucursal });
+    }
+
+    return qb.orderBy('venta.fecha_venta', 'DESC').take(limit).getMany();
+  }
+
   // --- Inventario Unificado ---
   async getMovimientosInventario(idSucursal?: number) {
     const where = idSucursal ? [
@@ -1705,7 +1719,7 @@ export class PosService {
     }
   }
 
-  async parseCsf(buffer: Buffer) {
+  async parseCsf(buffer: Buffer, idSucursal?: number) {
     try {
       const pdfParse = require('pdf-parse');
       const data = await pdfParse(buffer);
@@ -1773,7 +1787,26 @@ export class PosService {
         direccionCompleta = partes.join(', ').replace(/\s+/g, ' ');
       }
 
-      return { success: !!rfc, rfc, nombre, cp, regimenFiscal, direccion: direccionCompleta, rawText: text.substring(0, 500) };
+      // Guardar el cliente automáticamente si no existe y si tenemos el idSucursal
+      let idCliente: number | null = null;
+      if (rfc && nombre && idSucursal) {
+        let cliente = await this.clienteRepo.findOne({ where: { rfc, sucursal: { idSucursal } } });
+        if (!cliente) {
+          cliente = this.clienteRepo.create({
+            nombreCompleto: nombre,
+            rfc,
+            cp,
+            regimenFiscal,
+            direccion: direccionCompleta,
+            sucursal: { idSucursal },
+            activo: true
+          });
+          await this.clienteRepo.save(cliente);
+        }
+        idCliente = cliente.idCliente;
+      }
+
+      return { success: !!rfc, rfc, nombre, cp, regimenFiscal, direccion: direccionCompleta, idCliente, rawText: text.substring(0, 500) };
     } catch (error) {
 //       void('Error parseando CSF:', error);
       return { success: false, error: 'No se pudo leer el PDF' };
@@ -1840,6 +1873,50 @@ export class PosService {
   // ═══════════════════════════════════════════════════════
   // COMPRAS
   // ═══════════════════════════════════════════════════════
+
+  async buscarConceptosCompras(q: string, idSucursal?: number) {
+    if (!q || q.length < 2) return [];
+    
+    // We want to search for products in purchase details by name, barcode, or folio
+    const query = this.dataSource.createQueryBuilder()
+      .select([
+        'cd.id_detalle_compra as idDetalle',
+        'c.id_compra as idCompra',
+        'c.folio as folio',
+        'c.fecha_compra as fechaCompra',
+        'prov.nombre as proveedor',
+        'p.id_producto as idProducto',
+        'p.nombre as nombre',
+        'p.codigo_barras as codigoBarras',
+        'cd.precio_costo as precioUnitario',
+        'p.iva as iva'
+      ])
+      .from('pos_compras_detalle', 'cd')
+      .innerJoin('pos_compras', 'c', 'c.id_compra = cd.id_compra')
+      .leftJoin('pos_proveedores', 'prov', 'prov.id_proveedor = c.id_proveedor')
+      .innerJoin('pos_productos', 'p', 'p.id_producto = cd.id_producto')
+      .where('(p.nombre LIKE :q OR p.codigo_barras LIKE :q OR c.folio LIKE :q OR prov.nombre LIKE :q)', { q: `%${q}%` });
+
+    if (idSucursal) {
+      query.andWhere('c.id_sucursal = :idSucursal', { idSucursal });
+    }
+
+    query.orderBy('c.fecha_compra', 'DESC')
+      .limit(50);
+      
+    const results = await query.getRawMany();
+    return results.map(r => ({
+      idDetalle: r.idDetalle,
+      idProducto: r.idProducto,
+      nombre: r.nombre,
+      codigoBarras: r.codigoBarras,
+      precioUnitario: Number(r.precioUnitario),
+      iva: Number(r.iva),
+      folio: r.folio,
+      proveedor: r.proveedor,
+      fechaCompra: r.fechaCompra
+    }));
+  }
 
   async getCompras(idSucursal?: number, idProveedor?: number) {
     const where: any = {};

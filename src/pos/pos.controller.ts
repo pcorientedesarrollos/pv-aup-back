@@ -207,6 +207,14 @@ export class PosController {
     return this.posService.getVentas(Number(idSucursal), folio, Number(limit) || 100, Number(offset) || 0);
   }
 
+  @Get('ventas-no-facturadas')
+  getVentasNoFacturadas(
+    @Headers("x-sucursal-id") idSucursal: string,
+    @Query('limit') limit?: string
+  ) {
+    return this.posService.getVentasNoFacturadas(idSucursal ? Number(idSucursal) : undefined, Number(limit) || 100);
+  }
+
   // --- Inventario Unificado ---
   @Get('inventario')
   getMovimientosInventario(@Headers("x-sucursal-id") idSucursal: string) {
@@ -490,11 +498,11 @@ export class PosController {
   // "? HERRAMIENTAS / CSF "?
   @Post('utils/parse-csf')
   @UseInterceptors(FileInterceptor('file')) // memory storage by default
-  async parseCsf(@UploadedFile() file: Express.Multer.File) {
+  async parseCsf(@UploadedFile() file: Express.Multer.File, @Headers('x-sucursal-id') idSucursal: string) {
     if (!file) {
       return { success: false, error: 'No se subió ningún archivo' };
     }
-    return this.posService.parseCsf(file.buffer);
+    return this.posService.parseCsf(file.buffer, idSucursal ? Number(idSucursal) : undefined);
   }
 
   @Get('utils/buscar-rfc/:rfc')
@@ -542,6 +550,11 @@ export class PosController {
       idSucursal ? Number(idSucursal) : undefined,
       idProveedor ? Number(idProveedor) : undefined
     );
+  }
+
+  @Get('compras/conceptos')
+  buscarConceptosCompras(@Query('q') q: string, @Headers('x-sucursal-id') idSucursal: string) {
+    return this.posService.buscarConceptosCompras(q, idSucursal ? Number(idSucursal) : undefined);
   }
 
   @Get('compras/:id')
