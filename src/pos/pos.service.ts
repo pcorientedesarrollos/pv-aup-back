@@ -222,6 +222,7 @@ export class PosService {
     imagenUrl?: string;
     claveProdServ?: string;
     claveUnidad?: string;
+    sumarStock?: number;
   }) {
     const productoExistente = await this.productoRepo.findOne({ where: { idProducto: id }, relations: { sucursal: true } });
     if (!productoExistente) throw new BadRequestException('Producto no encontrado');
@@ -258,6 +259,11 @@ export class PosService {
     if (Object.keys(updates).length > 0) {
       await this.productoRepo.update(id, updates);
     }
+    
+    if (data.sumarStock !== undefined && data.sumarStock !== 0) {
+      await this.productoRepo.increment({ idProducto: id }, 'stock', data.sumarStock);
+    }
+    
     return this.productoRepo.findOne({ where: { idProducto: id }, relations: { categoria: true, codigosAdicionales: true } });
   }
 
