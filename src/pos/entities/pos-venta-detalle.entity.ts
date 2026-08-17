@@ -24,6 +24,9 @@ export class PosVentaDetalle {
   @Column('decimal', { name: 'monto_iva', precision: 10, scale: 2, default: 0.00 })
   montoIva: number;
 
+  @Column('boolean', { name: 'aplica_iva', default: true })
+  aplicaIva: boolean;
+
   @Column('decimal', { precision: 10, scale: 2, default: 0.00 })
   descuento: number;
 

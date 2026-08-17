@@ -27,6 +27,24 @@ export class PosProducto {
   @Column('decimal', { name: 'precio_publico', precision: 10, scale: 2, default: 0.00 })
   precioPublico: number;
 
+  @Column('decimal', { name: 'precio_compra', precision: 10, scale: 2, default: 0.00 })
+  precioCompra: number;
+
+  @Column('decimal', { precision: 5, scale: 2, default: 18.0 })
+  utilidad: number;
+
+  @Column({ name: 'aplica_descuento', default: false })
+  aplicaDescuento: boolean;
+
+  @Column({ name: 'tipo_descuento', length: 20, default: 'porcentaje', nullable: true })
+  tipoDescuento: string;
+
+  @Column({ name: 'aplica_iva', default: false })
+  aplicaIva: boolean;
+
+  @Column('decimal', { name: 'precio_venta', precision: 10, scale: 2, default: 0.00 })
+  precioVenta: number;
+
   @Column('decimal', { name: 'precio_mayoreo', precision: 10, scale: 2, nullable: true })
   precioMayoreo: number;
 
@@ -50,6 +68,12 @@ export class PosProducto {
 
   @Column({ name: 'clave_unidad', length: 10, default: 'H87' })
   claveUnidad: string;
+
+  @Column({ name: 'tipo_articulo', length: 50, default: 'Terminado' })
+  tipoArticulo: string;
+
+  @Column({ name: 'unidad_medida', length: 20, default: 'Pza' })
+  unidadMedida: string;
 
   @ManyToOne(() => PosCategoria, (categoria) => categoria.productos, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'id_categoria' })

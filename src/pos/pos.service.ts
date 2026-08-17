@@ -1,6 +1,6 @@
 import axios from 'axios';
 import AdmZip = require('adm-zip');
-import { Injectable, BadRequestException, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PDFDocument as PDFLibDocument, rgb, degrees, StandardFonts } from 'pdf-lib';
 import * as bcrypt from 'bcryptjs';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -26,6 +26,9 @@ import { PosCompraDetalle } from './entities/pos-compra-detalle.entity';
 import { PosDevolucion } from './entities/pos-devolucion.entity';
 import { PosCotizacion } from './entities/pos-cotizacion.entity';
 import { PosCotizacionDetalle } from './entities/pos-cotizacion-detalle.entity';
+import { PosReceta } from './entities/pos-receta.entity';
+import { PosTraspaso } from './entities/pos-traspaso.entity';
+import { PosTraspasoDetalle } from './entities/pos-traspaso-detalle.entity';
 import { JwtService } from '@nestjs/jwt';
 import Facturapi from 'facturapi';
 import * as fs from 'fs';
@@ -57,6 +60,9 @@ export class PosService {
     @InjectRepository(PosDevolucion) private devolucionRepo: Repository<PosDevolucion>,
     @InjectRepository(PosCotizacion) private cotizacionRepo: Repository<PosCotizacion>,
     @InjectRepository(PosCotizacionDetalle) private cotizacionDetalleRepo: Repository<PosCotizacionDetalle>,
+    @InjectRepository(PosReceta) private recetaRepo: Repository<PosReceta>,
+    @InjectRepository(PosTraspaso) private traspasoRepo: Repository<PosTraspaso>,
+    @InjectRepository(PosTraspasoDetalle) private traspasoDetalleRepo: Repository<PosTraspasoDetalle>,
     private jwtService: JwtService,
     private dataSource: DataSource
   ) {}
@@ -161,7 +167,7 @@ export class PosService {
     if (!isMatch) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
-    const jwtPayload = { username: user.nombreUsuario, sub: user.idUsuario, rol: user.rol, sucursal: user.sucursal?.idSucursal };
+    const jwtPayload = { username: user.nombreUsuario, sub: user.idUsuario, rol: user.rol, sucursal: user.sucursal?.idSucursal, idEmpresa: user.sucursal?.empresa?.idEmpresa };
     const empresa = user.sucursal?.empresa;
 
     const authPayload = { 
@@ -214,6 +220,12 @@ export class PosService {
     codigoBarras?: string;
     precioUnitario?: number;
     precioPublico?: number;
+    precioCompra?: number;
+    utilidad?: number;
+    aplicaDescuento?: boolean;
+    tipoDescuento?: string;
+    aplicaIva?: boolean;
+    precioVenta?: number;
     precioMayoreo?: number;
     descuento?: number;
     minimoMayoreo?: number;
@@ -223,9 +235,15 @@ export class PosService {
     claveProdServ?: string;
     claveUnidad?: string;
     sumarStock?: number;
-  }) {
+  }, idSucursalUsuario?: number, rol?: string) {
     const productoExistente = await this.productoRepo.findOne({ where: { idProducto: id }, relations: { sucursal: true } });
     if (!productoExistente) throw new BadRequestException('Producto no encontrado');
+    // Validar pertenencia
+    if (idSucursalUsuario && rol !== 'Administrador' && rol !== 'Soporte') {
+      if (productoExistente.sucursal?.idSucursal !== idSucursalUsuario) {
+        throw new ForbiddenException('No tienes permiso para modificar este producto');
+      }
+    }
     const idSucursal = productoExistente.sucursal?.idSucursal;
 
     if (idSucursal) {
@@ -248,6 +266,12 @@ export class PosService {
     if (data.codigoBarras !== undefined) updates.codigoBarras = data.codigoBarras;
     if (data.precioUnitario !== undefined) updates.precioUnitario = data.precioUnitario;
     if (data.precioPublico !== undefined) updates.precioPublico = data.precioPublico;
+    if (data.precioCompra !== undefined) updates.precioCompra = data.precioCompra;
+    if (data.utilidad !== undefined) updates.utilidad = data.utilidad;
+    if (data.aplicaDescuento !== undefined) updates.aplicaDescuento = data.aplicaDescuento;
+    if (data.tipoDescuento !== undefined) updates.tipoDescuento = data.tipoDescuento;
+    if (data.aplicaIva !== undefined) updates.aplicaIva = data.aplicaIva;
+    if (data.precioVenta !== undefined) updates.precioVenta = data.precioVenta;
     if (data.precioMayoreo !== undefined) updates.precioMayoreo = data.precioMayoreo;
     if (data.descuento !== undefined) updates.descuento = data.descuento;
     if (data.minimoMayoreo !== undefined) updates.minimoMayoreo = data.minimoMayoreo;
@@ -364,7 +388,13 @@ export class PosService {
     return this.clienteRepo.save(nuevo);
   }
 
-  async actualizarCliente(id: number, payload: any) {
+  async actualizarCliente(id: number, payload: any, idSucursal?: number, rol?: string) {
+    // Validar pertenencia salvo roles privilegiados
+    if (idSucursal && rol !== 'Administrador' && rol !== 'Soporte') {
+      const cliente = await this.clienteRepo.findOne({ where: { idCliente: id }, relations: { sucursal: true } });
+      if (!cliente) throw new BadRequestException('Cliente no encontrado');
+      if (cliente.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para modificar este cliente');
+    }
     await this.verificarDuplicadoCliente(payload, id);
     const updates = { ...payload };
     delete updates.idSucursal;
@@ -373,7 +403,12 @@ export class PosService {
     return this.clienteRepo.findOne({ where: { idCliente: id } });
   }
 
-  async eliminarCliente(id: number) {
+  async eliminarCliente(id: number, idSucursal?: number, rol?: string) {
+    if (idSucursal && rol !== 'Administrador' && rol !== 'Soporte') {
+      const cliente = await this.clienteRepo.findOne({ where: { idCliente: id }, relations: { sucursal: true } });
+      if (!cliente) throw new BadRequestException('Cliente no encontrado');
+      if (cliente.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para eliminar este cliente');
+    }
     await this.clienteRepo.delete(id);
     return { success: true };
   }
@@ -825,14 +860,19 @@ export class PosService {
     }
   }
 
-  async anularMovimiento(idMovimiento: number) {
+  async anularMovimiento(idMovimiento: number, idSucursal?: number, rol?: string) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      const mov = await queryRunner.manager.findOne(PosMovimientoInventario, { where: { idMovimiento }, relations: { producto: true } });
+      const mov = await queryRunner.manager.findOne(PosMovimientoInventario, { where: { idMovimiento }, relations: { producto: true, sucursal: true } });
       if (!mov) throw new BadRequestException('Movimiento no encontrado');
+
+      // Validar pertenencia
+      if (idSucursal && rol !== 'Administrador' && rol !== 'Soporte') {
+        if (mov.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para anular este movimiento');
+      }
 
       // Revertir stock
       if (mov.tipoMovimiento === 'Entrada') {
@@ -855,14 +895,19 @@ export class PosService {
     }
   }
 
-  async editarMovimiento(idMovimiento: number, payload: any) {
+  async editarMovimiento(idMovimiento: number, payload: any, idSucursal?: number, rol?: string) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      const mov = await queryRunner.manager.findOne(PosMovimientoInventario, { where: { idMovimiento }, relations: { producto: true } });
+      const mov = await queryRunner.manager.findOne(PosMovimientoInventario, { where: { idMovimiento }, relations: { producto: true, sucursal: true } });
       if (!mov) throw new BadRequestException('Movimiento no encontrado');
+
+      // Validar pertenencia
+      if (idSucursal && rol !== 'Administrador' && rol !== 'Soporte') {
+        if (mov.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para editar este movimiento');
+      }
 
       // Revertir el efecto de la cantidad anterior
       if (mov.tipoMovimiento === 'Entrada') {
@@ -897,7 +942,6 @@ export class PosService {
     }
   }
 
-  // ─── CREAR PRODUCTO ─────────────────────────────────────────────────────
   async crearProducto(data: {
     nombre: string;
     idSucursal?: number;
@@ -905,6 +949,12 @@ export class PosService {
     codigoBarras?: string;
     precioUnitario?: number;
     precioPublico?: number;
+    precioCompra?: number;
+    utilidad?: number;
+    aplicaDescuento?: boolean;
+    tipoDescuento?: string;
+    aplicaIva?: boolean;
+    precioVenta?: number;
     precioMayoreo?: number;
     descuento?: number;
     minimoMayoreo?: number;
@@ -934,6 +984,12 @@ export class PosService {
       codigoBarras: data.codigoBarras || null,
       precioUnitario: data.precioUnitario || 0,
       precioPublico: data.precioPublico || data.precioUnitario || 0,
+      precioCompra: data.precioCompra || 0,
+      utilidad: data.utilidad || 18.0,
+      aplicaDescuento: data.aplicaDescuento || false,
+      tipoDescuento: data.tipoDescuento || 'porcentaje',
+      aplicaIva: data.aplicaIva || false,
+      precioVenta: data.precioVenta || 0,
       precioMayoreo: data.precioMayoreo || null,
       descuento: data.descuento || 0,
       minimoMayoreo: data.minimoMayoreo || 0,
@@ -1306,7 +1362,9 @@ export class PosService {
         const descuento = Number(d.descuento || 0);
         const subtotalSinIva = unitPriceSinIva * cantidad;
         const baseIva = subtotalSinIva - descuento;
-        const iva = baseIva * 0.16;
+        
+        const tieneIva = d.aplicaIva ?? true;
+        const iva = tieneIva ? baseIva * 0.16 : 0;
         const totalLine = baseIva + iva;
         
         const item: any = {
@@ -1314,11 +1372,15 @@ export class PosService {
           IdentificationNumber: d.producto?.codigoBarras || d.producto?.idProducto.toString(),
           Description: d.producto?.nombre || "Producto general",
           UnitCode: d.producto?.claveUnidad || "H87",
-          TaxObject: "02",
+          TaxObject: tieneIva ? "02" : "01",
           UnitPrice: Number(unitPriceSinIva.toFixed(4)),
           Quantity: cantidad,
           Subtotal: Number(subtotalSinIva.toFixed(4)),
-          Taxes: [
+          Total: Number(totalLine.toFixed(4))
+        };
+
+        if (tieneIva) {
+          item.Taxes = [
             {
               Total: Number(iva.toFixed(4)),
               Name: "IVA",
@@ -1326,9 +1388,8 @@ export class PosService {
               Rate: 0.16,
               IsRetention: false
             }
-          ],
-          Total: Number(totalLine.toFixed(4))
-        };
+          ];
+        }
 
         if (descuento > 0) {
           item.Discount = Number(descuento.toFixed(4));
@@ -1375,9 +1436,13 @@ export class PosService {
     }
   }
 
-  async cancelarFactura(idFactura: number, motivo: string = '02', uuidSustitucion?: string) {
-    const factura = await this.facturaRepo.findOne({ where: { idFactura } });
+  async cancelarFactura(idFactura: number, motivo: string = '02', uuidSustitucion?: string, idSucursal?: number, rol?: string) {
+    const factura = await this.facturaRepo.findOne({ where: { idFactura }, relations: { sucursal: true } });
     if (!factura) throw new BadRequestException('Factura no encontrada');
+    // Validar pertenencia
+    if (idSucursal && rol !== 'Administrador' && rol !== 'Soporte') {
+      if (factura.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para cancelar esta factura');
+    }
     if (factura.estatus === 'Cancelada') throw new BadRequestException('La factura ya está cancelada');
     if (!factura.facturapiId) throw new BadRequestException('La factura no tiene un ID de Facturama asociado');
 
@@ -1862,17 +1927,25 @@ export class PosService {
     return this.proveedorRepo.save(proveedor);
   }
 
-  async actualizarProveedor(id: number, payload: any) {
+  async actualizarProveedor(id: number, payload: any, idSucursal?: number, rol?: string) {
     await this.verificarDuplicadoProveedor(payload, id);
-    const proveedor = await this.proveedorRepo.findOneBy({ idProveedor: id });
+    const proveedor = await this.proveedorRepo.findOne({ where: { idProveedor: id }, relations: { sucursal: true } });
     if (!proveedor) throw new NotFoundException('Proveedor no encontrado');
+    // Validar pertenencia
+    if (idSucursal && rol !== 'Administrador' && rol !== 'Soporte') {
+      if (proveedor.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para modificar este proveedor');
+    }
     Object.assign(proveedor, payload);
     return this.proveedorRepo.save(proveedor);
   }
 
-  async eliminarProveedor(id: number) {
-    const proveedor = await this.proveedorRepo.findOneBy({ idProveedor: id });
+  async eliminarProveedor(id: number, idSucursal?: number, rol?: string) {
+    const proveedor = await this.proveedorRepo.findOne({ where: { idProveedor: id }, relations: { sucursal: true } });
     if (!proveedor) throw new NotFoundException('Proveedor no encontrado');
+    // Validar pertenencia
+    if (idSucursal && rol !== 'Administrador' && rol !== 'Soporte') {
+      if (proveedor.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para eliminar este proveedor');
+    }
     proveedor.activo = false;
     await this.proveedorRepo.save(proveedor);
     return { success: true };
@@ -2267,6 +2340,7 @@ export class PosService {
         d.utilidadPorcentaje = prod.utilidadPorcentaje || 0;
         d.utilidadValor = prod.utilidadValor || 0;
         d.precioConUtilidad = prod.precioConUtilidad || prod.precioUnitario;
+        d.aplicaIva = prod.aplicaIva || false;
         d.importe = prod.cantidad * d.precioConUtilidad;
         return d;
       });
@@ -2276,14 +2350,20 @@ export class PosService {
     return this.getCotizacionById(savedCot.idCotizacion);
   }
 
-  async cambiarEstatusCotizacion(idCotizacion: number, estatus: string) {
+  async cambiarEstatusCotizacion(idCotizacion: number, estatus: string, idSucursal?: number, rol?: string) {
     const cotizacion = await this.getCotizacionById(idCotizacion);
+    if (idSucursal && rol !== 'Administrador' && rol !== 'Soporte') {
+      if (cotizacion.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para modificar esta cotización');
+    }
     cotizacion.estatus = estatus;
     return this.cotizacionRepo.save(cotizacion);
   }
 
-  async eliminarCotizacion(idCotizacion: number) {
+  async eliminarCotizacion(idCotizacion: number, idSucursal?: number, rol?: string) {
     const cotizacion = await this.getCotizacionById(idCotizacion);
+    if (idSucursal && rol !== 'Administrador' && rol !== 'Soporte') {
+      if (cotizacion.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para eliminar esta cotización');
+    }
     return this.cotizacionRepo.remove(cotizacion);
   }
 
@@ -2326,8 +2406,9 @@ export class PosService {
         venta: savedVenta,
         producto: d.producto,
         cantidad: d.cantidad,
-        precioUnitario: d.precioUnitario,
-        importe: d.importe
+        precioUnitario: d.precioConUtilidad,
+        subtotal: d.importe,
+        aplicaIva: d.aplicaIva
       });
     });
 
@@ -2738,4 +2819,397 @@ export class PosService {
     return { importados, errores };
   }
 
+  // --- Gestion de Recetas ---
+  async agregarReceta(idProductoPadre: number, idProductoHijo: number, cantidad: number) {
+    const receta = this.recetaRepo.create({
+      productoPadre: { idProducto: idProductoPadre },
+      productoHijo: { idProducto: idProductoHijo },
+      cantidad
+    });
+    return this.recetaRepo.save(receta);
+  }
+
+  async obtenerRecetas(idProductoPadre: number) {
+    return this.recetaRepo.find({
+      where: { productoPadre: { idProducto: idProductoPadre } },
+      relations: { productoHijo: true }
+    });
+  }
+
+  async eliminarReceta(idReceta: number) {
+    return this.recetaRepo.delete(idReceta);
+  }
+
+  // --- Produccion y Fraccionamiento ---
+  async fraccionarProducto(idSucursal: number, idProductoPadre: number, cantidad: number, productosResultantes: any[], idUsuario: number) {
+    const parseNumber = (val: any) => {
+      if (val === null || val === undefined) return 0;
+      if (typeof val === 'string') val = val.replace(/,/g, '');
+      const parsed = Number(val);
+      return isNaN(parsed) ? 0 : parsed;
+    };
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const productoPadre = await queryRunner.manager.findOne(PosProducto, { where: { idProducto: idProductoPadre } });
+      if (!productoPadre) throw new BadRequestException('Producto padre no encontrado');
+
+      const usuario = await queryRunner.manager.findOne(PosUsuario, { where: { idUsuario }, relations: { sucursal: true } });
+      if (!usuario) throw new BadRequestException('Usuario no encontrado');
+
+      const cantidadNum = parseNumber(cantidad);
+      if (parseNumber(productoPadre.stockActual) < cantidadNum) {
+        throw new BadRequestException(`Stock insuficiente de ${productoPadre.nombre} para fraccionar`);
+      }
+
+      // Salida del padre
+      productoPadre.stockActual = parseNumber(productoPadre.stockActual) - cantidadNum;
+      await queryRunner.manager.save(productoPadre);
+
+      const movSalida = queryRunner.manager.create(PosMovimientoInventario, {
+        producto: productoPadre,
+        usuario,
+        sucursal: { idSucursal },
+        tipoMovimiento: 'Fraccionamiento_OUT',
+        cantidad: cantidadNum,
+        referencia: 'Fraccionamiento de producto'
+      });
+      await queryRunner.manager.save(movSalida);
+
+      // Entradas de los hijos
+      for (const item of productosResultantes) {
+        if (!item.idProducto) continue;
+        const productoHijo = await queryRunner.manager.findOne(PosProducto, { where: { idProducto: item.idProducto } });
+        if (!productoHijo) throw new BadRequestException(`Producto resultante ${item.idProducto} no encontrado`);
+
+        const itemCantidad = parseNumber(item.cantidad);
+        productoHijo.stockActual = parseNumber(productoHijo.stockActual) + itemCantidad;
+        await queryRunner.manager.save(productoHijo);
+
+        const movEntrada = queryRunner.manager.create(PosMovimientoInventario, {
+          producto: productoHijo,
+          usuario,
+          sucursal: { idSucursal },
+          tipoMovimiento: 'Fraccionamiento_IN',
+          cantidad: itemCantidad,
+          referencia: `Derivado de fraccionamiento de ${productoPadre.nombre}`
+        });
+        await queryRunner.manager.save(movEntrada);
+      }
+
+      await queryRunner.commitTransaction();
+      return { success: true, message: 'Fraccionamiento completado' };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async producirArticulo(idSucursal: number, idProducto: number, cantidad: number, idUsuario: number) {
+    const parseNumber = (val: any) => {
+      if (val === null || val === undefined) return 0;
+      if (typeof val === 'string') val = val.replace(/,/g, '');
+      const parsed = Number(val);
+      return isNaN(parsed) ? 0 : parsed;
+    };
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const productoTerminado = await queryRunner.manager.findOne(PosProducto, { where: { idProducto } });
+      if (!productoTerminado) throw new BadRequestException('Producto a producir no encontrado');
+
+      const usuario = await queryRunner.manager.findOne(PosUsuario, { where: { idUsuario }, relations: { sucursal: true } });
+      if (!usuario) throw new BadRequestException('Usuario no encontrado');
+
+      const receta = await queryRunner.manager.find(PosReceta, { 
+        where: { productoPadre: { idProducto } },
+        relations: { productoHijo: true }
+      });
+
+      if (!receta || receta.length === 0) {
+        throw new BadRequestException('El producto no tiene una receta configurada para produccion');
+      }
+
+      const cantidadNum = parseNumber(cantidad);
+
+      // 1. Descontar ingredientes (hijos)
+      for (const item of receta) {
+        if (!item.productoHijo && !(item as any).id_producto_hijo) continue;
+        const cantRequerida = parseNumber(item.cantidad) * cantidadNum;
+        
+        // Sometimes TypeORM returns the relation as a number or doesn't map idProducto properly
+        const hijoId = item.productoHijo?.idProducto || (item as any).id_producto_hijo || (typeof item.productoHijo === 'number' ? item.productoHijo : null);
+        
+        if (!hijoId) {
+          throw new BadRequestException(`No se pudo obtener el ID del ingrediente para la receta de ${productoTerminado.nombre}`);
+        }
+
+        const ingrediente = await queryRunner.manager.findOne(PosProducto, { where: { idProducto: hijoId } });
+        
+        if (!ingrediente) throw new BadRequestException(`Ingrediente no encontrado con ID: ${hijoId}`);
+        if (parseNumber(ingrediente.stockActual) < cantRequerida) {
+           throw new BadRequestException(`Stock insuficiente de ingrediente: ${ingrediente.nombre} (Stock: ${ingrediente.stockActual}, Requerido: ${cantRequerida})`);
+        }
+
+        ingrediente.stockActual = parseNumber(ingrediente.stockActual) - cantRequerida;
+        await queryRunner.manager.save(ingrediente);
+
+        const movSalida = queryRunner.manager.create(PosMovimientoInventario, {
+          producto: ingrediente,
+          usuario,
+          sucursal: { idSucursal },
+          tipoMovimiento: 'Produccion_OUT',
+          cantidad: cantRequerida,
+          referencia: `Consumo para produccion de ${productoTerminado.nombre}`
+        });
+        await queryRunner.manager.save(movSalida);
+      }
+
+      // 2. Sumar producto terminado (padre)
+      productoTerminado.stockActual = parseNumber(productoTerminado.stockActual) + cantidadNum;
+      await queryRunner.manager.save(productoTerminado);
+
+      const movEntrada = queryRunner.manager.create(PosMovimientoInventario, {
+        producto: productoTerminado,
+        usuario,
+        sucursal: { idSucursal },
+        tipoMovimiento: 'Produccion_IN',
+        cantidad: cantidadNum,
+        referencia: 'Produccion de articulo'
+      });
+      await queryRunner.manager.save(movEntrada);
+
+      await queryRunner.commitTransaction();
+      return { success: true, message: 'Produccion completada' };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  // --- TRASPASOS DE INVENTARIO ---
+
+  async crearTraspaso(idSucursalOrigen: number, idSucursalDestino: number, idUsuario: number, productos: any[], observaciones: string) {
+    const parseNumber = (val: any) => {
+      if (val === null || val === undefined) return 0;
+      const parsed = typeof val === 'string' ? parseFloat(val) : val;
+      return isNaN(parsed) ? 0 : parsed;
+    };
+
+    if (idSucursalOrigen === idSucursalDestino) {
+      throw new BadRequestException('La sucursal origen y destino no pueden ser la misma.');
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const sucursalOrigen = await queryRunner.manager.findOne(PosSucursal, { where: { idSucursal: idSucursalOrigen } });
+      const sucursalDestino = await queryRunner.manager.findOne(PosSucursal, { where: { idSucursal: idSucursalDestino } });
+      const usuario = await queryRunner.manager.findOne(PosUsuario, { where: { idUsuario } });
+
+      if (!sucursalOrigen || !sucursalDestino) {
+        throw new BadRequestException('Sucursal origen o destino no encontrada.');
+      }
+
+      const folio = await this.generarFolioConsecutivo(this.traspasoRepo, 'TRAS', 'folio');
+
+      const traspaso = queryRunner.manager.create(PosTraspaso, {
+        folio,
+        sucursalOrigen: sucursalOrigen as any,
+        sucursalDestino: sucursalDestino as any,
+        usuario: usuario as any,
+        observaciones
+      });
+      const savedTraspaso = await queryRunner.manager.save(traspaso);
+
+      for (const item of productos) {
+        if (!item.idProducto) continue;
+        
+        const cantidadTraspaso = parseNumber(item.cantidad);
+        if (cantidadTraspaso <= 0) continue;
+
+        // 1. Obtener producto origen
+        const prodOrigen = await queryRunner.manager.findOne(PosProducto, { 
+          where: { idProducto: item.idProducto },
+          relations: { categoria: true }
+        });
+        
+        if (!prodOrigen) {
+          throw new BadRequestException(`Producto origen con ID ${item.idProducto} no encontrado.`);
+        }
+        
+        const stockActual = parseNumber(prodOrigen.stockActual);
+        if (stockActual < cantidadTraspaso) {
+          throw new BadRequestException(`Stock insuficiente en sucursal origen para: ${prodOrigen.nombre} (Stock: ${stockActual}, Requerido: ${cantidadTraspaso})`);
+        }
+
+        // 2. Buscar equivalente en destino por código de barras
+        let prodDestino = await queryRunner.manager.findOne(PosProducto, {
+          where: { 
+            codigoBarras: prodOrigen.codigoBarras,
+            sucursal: { idSucursal: idSucursalDestino }
+          }
+        });
+
+        // 3. Si no existe, crearlo
+        if (!prodDestino) {
+          prodDestino = queryRunner.manager.create(PosProducto, {
+            nombre: prodOrigen.nombre,
+            descripcion: prodOrigen.descripcion,
+            codigoBarras: prodOrigen.codigoBarras,
+            precioUnitario: prodOrigen.precioUnitario,
+            iva: prodOrigen.iva,
+            precioPublico: prodOrigen.precioPublico,
+            precioMayoreo: prodOrigen.precioMayoreo,
+            descuento: prodOrigen.descuento,
+            minimoMayoreo: prodOrigen.minimoMayoreo,
+            stockMinimo: prodOrigen.stockMinimo,
+            stockActual: 0,
+            claveProdServ: prodOrigen.claveProdServ,
+            claveUnidad: prodOrigen.claveUnidad,
+            tipoArticulo: prodOrigen.tipoArticulo,
+            unidadMedida: prodOrigen.unidadMedida,
+            categoria: prodOrigen.categoria,
+            sucursal: sucursalDestino,
+            activo: prodOrigen.activo
+          });
+          prodDestino = await queryRunner.manager.save(prodDestino);
+        }
+
+        // 4. Descontar en Origen
+        prodOrigen.stockActual = stockActual - cantidadTraspaso;
+        await queryRunner.manager.save(prodOrigen);
+
+        const movSalida = queryRunner.manager.create(PosMovimientoInventario, {
+          producto: prodOrigen,
+          sucursal: sucursalOrigen,
+          usuario: usuario as any,
+          tipoMovimiento: 'Traspaso_OUT',
+          cantidad: cantidadTraspaso,
+          referencia: `Traspaso a ${sucursalDestino.nombre} (Folio: ${folio})`
+        });
+        await queryRunner.manager.save(movSalida);
+
+        // 5. Sumar en Destino
+        prodDestino.stockActual = parseNumber(prodDestino.stockActual) + cantidadTraspaso;
+        await queryRunner.manager.save(prodDestino);
+
+        const movEntrada = queryRunner.manager.create(PosMovimientoInventario, {
+          producto: prodDestino,
+          sucursal: sucursalDestino,
+          usuario: usuario as any,
+          tipoMovimiento: 'Traspaso_IN',
+          cantidad: cantidadTraspaso,
+          referencia: `Traspaso desde ${sucursalOrigen.nombre} (Folio: ${folio})`
+        });
+        await queryRunner.manager.save(movEntrada);
+
+        // 6. Guardar Detalle
+        const detalle = queryRunner.manager.create(PosTraspasoDetalle, {
+          traspaso: savedTraspaso,
+          producto: prodOrigen,
+          cantidad: cantidadTraspaso
+        });
+        await queryRunner.manager.save(detalle);
+      }
+
+      await queryRunner.commitTransaction();
+      return { success: true, traspaso: savedTraspaso, message: 'Traspaso completado con éxito' };
+
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async obtenerTraspasos(idEmpresa: number) {
+    return this.traspasoRepo.find({
+      where: [
+        { sucursalOrigen: { empresa: { idEmpresa } } },
+        { sucursalDestino: { empresa: { idEmpresa } } }
+      ],
+      relations: { sucursalOrigen: true, sucursalDestino: true, usuario: true },
+      order: { fecha: 'DESC' }
+    });
+  }
+
+  async generarReporteTraspaso(idTraspaso: number): Promise<Buffer> {
+    const traspaso = await this.traspasoRepo.findOne({
+      where: { idTraspaso },
+      relations: { sucursalOrigen: true, sucursalDestino: true, usuario: true, detalles: { producto: true } }
+    });
+
+    if (!traspaso) throw new NotFoundException('Traspaso no encontrado');
+
+    const pdfDoc = await PDFLibDocument.create();
+    let page = pdfDoc.addPage([612, 792]);
+    const { width, height } = page.getSize();
+    const timesRomanFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const timesRomanBoldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    
+    let yOffset = height - 50;
+    
+    const drawText = (text: string, x: number, font: any, size: number) => {
+      page.drawText(text, { x, y: yOffset, size, font, color: rgb(0, 0, 0) });
+      yOffset -= (size + 5);
+    };
+
+    drawText('Reporte de Traspaso de Inventario', 50, timesRomanBoldFont, 16);
+    yOffset -= 10;
+
+    drawText(`Folio: ${traspaso.folio}`, 50, timesRomanFont, 12);
+    drawText(`Fecha: ${new Date(traspaso.fecha).toLocaleString()}`, 50, timesRomanFont, 12);
+    drawText(`Registrado por: ${traspaso.usuario?.nombreCompleto || 'N/A'}`, 50, timesRomanFont, 12);
+    drawText(`Estado: ${traspaso.estatus}`, 50, timesRomanFont, 12);
+    yOffset -= 10;
+
+    drawText(`Sucursal Origen: ${traspaso.sucursalOrigen?.nombre || 'N/A'}`, 50, timesRomanBoldFont, 12);
+    drawText(`Sucursal Destino: ${traspaso.sucursalDestino?.nombre || 'N/A'}`, 50, timesRomanBoldFont, 12);
+    yOffset -= 20;
+
+    // Table Header
+    drawText('CÓDIGO', 50, timesRomanBoldFont, 10);
+    yOffset += 15;
+    drawText('PRODUCTO', 150, timesRomanBoldFont, 10);
+    yOffset += 15;
+    drawText('CANTIDAD', 450, timesRomanBoldFont, 10);
+    yOffset -= 5;
+    
+    page.drawLine({ start: { x: 50, y: yOffset }, end: { x: 550, y: yOffset }, thickness: 1, color: rgb(0,0,0) });
+    yOffset -= 15;
+
+    for (const detalle of traspaso.detalles) {
+      drawText(detalle.producto?.codigoBarras || 'N/A', 50, timesRomanFont, 10);
+      yOffset += 15;
+      drawText(detalle.producto?.nombre || 'N/A', 150, timesRomanFont, 10);
+      yOffset += 15;
+      drawText(String(detalle.cantidad), 450, timesRomanFont, 10);
+      yOffset -= 5;
+    }
+    
+    yOffset -= 50;
+    page.drawLine({ start: { x: 100, y: yOffset }, end: { x: 250, y: yOffset }, thickness: 1, color: rgb(0,0,0) });
+    page.drawLine({ start: { x: 350, y: yOffset }, end: { x: 500, y: yOffset }, thickness: 1, color: rgb(0,0,0) });
+    yOffset -= 15;
+    drawText('Firma de Envío', 120, timesRomanFont, 10);
+    yOffset += 15;
+    drawText('Firma de Recibido', 370, timesRomanFont, 10);
+
+    const pdfBytes = await pdfDoc.save();
+    return Buffer.from(pdfBytes);
+  }
 }

@@ -38,4 +38,7 @@ export class PosCotizacionDetalle {
 
   @Column('decimal', { precision: 10, scale: 2 })
   importe: number;
+
+  @Column({ name: 'aplica_iva', default: false })
+  aplicaIva: boolean;
 }

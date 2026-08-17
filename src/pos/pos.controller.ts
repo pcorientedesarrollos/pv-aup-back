@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UploadedFiles, Headers, Put, Query, BadRequestException, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UploadedFiles, Headers, Put, Query, BadRequestException, Res, UseGuards } from '@nestjs/common';
+import { CurrentUser } from '../auth/current-user.decorator';
+import { RolesGuard, Roles } from '../auth/roles.guard';
 
 import { LoginDto } from './dto/auth.dto';
 import { CrearSucursalDto, ActualizarSucursalDto } from './dto/sucursal.dto';
@@ -39,9 +41,17 @@ export class PosController {
   }
 
   // ─── SUCURSALES ─────────────────────────────────────────────────
+  @Public()
   @Get('sucursales')
-  getSucursales(@Headers("x-empresa-id") idEmpresa: string) {
-    return this.posService.getSucursales(idEmpresa ? Number(idEmpresa) : undefined);
+  async getSucursales(@Headers("x-empresa-id") idEmpresa: string) {
+    try {
+      return await this.posService.getSucursales(idEmpresa ? Number(idEmpresa) : undefined);
+    } catch (e) {
+      console.error('ERROR IN SUCURSALES:', e);
+      // Escribir el error a un archivo
+      require('fs').writeFileSync('backend-error.log', e.stack || e.message);
+      throw e;
+    }
   }
 
   @Post('sucursales')
@@ -106,8 +116,8 @@ export class PosController {
   }
 
   @Patch('productos/:id')
-  actualizarProducto(@Param('id') id: string, @Body() body: any) {
-    return this.posService.actualizarProductoCompleto(Number(id), body);
+  actualizarProducto(@Param('id') id: string, @Body() body: any, @CurrentUser() user: any) {
+    return this.posService.actualizarProductoCompleto(Number(id), body, user?.idSucursal, user?.rol);
   }
 
   @Get('categorias')
@@ -127,13 +137,13 @@ export class PosController {
   }
 
   @Patch('clientes/:id')
-  actualizarCliente(@Param("id") id: string, @Body() payload: ClienteDto) {
-    return this.posService.actualizarCliente(Number(id), payload);
+  actualizarCliente(@Param("id") id: string, @Body() payload: ClienteDto, @CurrentUser() user: any) {
+    return this.posService.actualizarCliente(Number(id), payload, user?.idSucursal, user?.rol);
   }
 
   @Delete('clientes/:id')
-  eliminarCliente(@Param('id') id: string) {
-    return this.posService.eliminarCliente(Number(id));
+  eliminarCliente(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.posService.eliminarCliente(Number(id), user?.idSucursal, user?.rol);
   }
 
   @Get('usuarios')
@@ -141,6 +151,8 @@ export class PosController {
     return this.posService.getUsuarios(Number(idSucursal));
   }
 
+  @UseGuards(RolesGuard)
+  @Roles('Soporte')
   @Get('usuarios/global')
   getUsuariosGlobal() {
     return this.posService.getAllUsuariosGlobal();
@@ -196,7 +208,6 @@ export class PosController {
     return this.posService.checkout(payload);
   }
 
-  @Public()
   @Get('ventas')
   getVentas(
     @Headers("x-sucursal-id") idSucursal: string,
@@ -248,13 +259,13 @@ export class PosController {
   }
 
   @Patch('inventario/movimiento/:id')
-  editarMovimiento(@Param("id") id: string, @Body() payload: EditarMovimientoDto) {
-    return this.posService.editarMovimiento(Number(id), payload);
+  editarMovimiento(@Param("id") id: string, @Body() payload: EditarMovimientoDto, @CurrentUser() user: any) {
+    return this.posService.editarMovimiento(Number(id), payload, user?.idSucursal, user?.rol);
   }
 
   @Delete('inventario/movimiento/:id')
-  anularMovimiento(@Param('id') id: string) {
-    return this.posService.anularMovimiento(Number(id));
+  anularMovimiento(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.posService.anularMovimiento(Number(id), user?.idSucursal, user?.rol);
   }
 
   // ─── NUEVO PRODUCTO ──────────────────────────────────────────────
@@ -334,6 +345,8 @@ export class PosController {
     return this.posService.updateConfiguracionSucursal(Number(idSucursal), payload);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles('Administrador', 'Soporte')
   @Get('configuraciones-todas')
   getAllConfiguraciones() {
     return this.posService.getAllConfiguraciones();
@@ -356,11 +369,10 @@ export class PosController {
   }
 
   @Post('facturas/:idFactura/cancelar')
-  cancelarFactura(@Param('idFactura') idFactura: string, @Body() payload: { motivo: string, uuidSustitucion?: string }) {
-    return this.posService.cancelarFactura(Number(idFactura), payload.motivo, payload.uuidSustitucion);
+  cancelarFactura(@Param('idFactura') idFactura: string, @Body() payload: { motivo: string, uuidSustitucion?: string }, @CurrentUser() user: any) {
+    return this.posService.cancelarFactura(Number(idFactura), payload.motivo, payload.uuidSustitucion, user?.idSucursal, user?.rol);
   }
 
-  @Public()
   @Get('facturas/:idFacturama/pdf')
   async descargarFacturaPdf(@Param('idFacturama') idFacturama: string, @Res() res: any) {
     try {
@@ -379,7 +391,6 @@ export class PosController {
     }
   }
 
-  @Public()
   @Get('facturas/:idFacturama/xml')
   async descargarFacturaXml(@Param('idFacturama') idFacturama: string, @Res() res: any) {
     try {
@@ -398,7 +409,6 @@ export class PosController {
     }
   }
 
-  @Public()
   @Get('facturas/:idFactura/paquete-cancelacion')
   async descargarPaqueteCancelacion(@Param('idFactura') idFactura: string, @Res() res: any) {
     try {
@@ -461,13 +471,13 @@ export class PosController {
   }
 
   @Patch('cotizaciones/:id/estatus')
-  cambiarEstatusCotizacion(@Param('id') id: string, @Body('estatus') estatus: string) {
-    return this.posService.cambiarEstatusCotizacion(Number(id), estatus);
+  cambiarEstatusCotizacion(@Param('id') id: string, @Body('estatus') estatus: string, @CurrentUser() user: any) {
+    return this.posService.cambiarEstatusCotizacion(Number(id), estatus, user?.idSucursal, user?.rol);
   }
 
   @Delete('cotizaciones/:id')
-  eliminarCotizacion(@Param('id') id: string) {
-    return this.posService.eliminarCotizacion(Number(id));
+  eliminarCotizacion(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.posService.eliminarCotizacion(Number(id), user?.idSucursal, user?.rol);
   }
 
   @Patch('cotizaciones/:id/convertir')
@@ -528,13 +538,13 @@ export class PosController {
   }
 
   @Put('proveedores/:id')
-  actualizarProveedor(@Param('id') id: string, @Body() body: any) {
-    return this.posService.actualizarProveedor(Number(id), body);
+  actualizarProveedor(@Param('id') id: string, @Body() body: any, @CurrentUser() user: any) {
+    return this.posService.actualizarProveedor(Number(id), body, user?.idSucursal, user?.rol);
   }
 
   @Delete('proveedores/:id')
-  eliminarProveedor(@Param('id') id: string) {
-    return this.posService.eliminarProveedor(Number(id));
+  eliminarProveedor(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.posService.eliminarProveedor(Number(id), user?.idSucursal, user?.rol);
   }
 
   // ═══════════════════════════════════════════════════════
@@ -669,5 +679,83 @@ export class PosController {
   ) {
     if (!archivo) throw new BadRequestException('No se recibió ningún archivo');
     return this.posService.importarProveedores(archivo.buffer, idSucursal ? Number(idSucursal) : undefined);
+  }
+
+  // ─── RECETAS / PRODUCCION ─────────────────────────────────────────
+
+  @Get('productos/:id/recetas')
+  getRecetasProducto(@Param('id') id: string) {
+    return this.posService.obtenerRecetas(Number(id));
+  }
+
+  @Post('productos/:id/recetas')
+  agregarReceta(
+    @Param('id') idProductoPadre: string,
+    @Body() payload: { idProductoHijo: number; cantidad: number }
+  ) {
+    return this.posService.agregarReceta(Number(idProductoPadre), payload.idProductoHijo, payload.cantidad);
+  }
+
+  @Delete('recetas/:idReceta')
+  eliminarReceta(@Param('idReceta') idReceta: string) {
+    return this.posService.eliminarReceta(Number(idReceta));
+  }
+
+  @Post('inventario/fraccionar')
+  fraccionarProducto(
+    @Headers('x-sucursal-id') idSucursal: string,
+    @Headers('x-usuario-id') idUsuario: string,
+    @Body() payload: { idProductoPadre: number; cantidad: number; productosResultantes: any[] }
+  ) {
+    return this.posService.fraccionarProducto(
+      Number(idSucursal),
+      payload.idProductoPadre,
+      payload.cantidad,
+      payload.productosResultantes,
+      Number(idUsuario)
+    );
+  }
+
+  @Post('inventario/producir')
+  producirArticulo(
+    @Headers('x-sucursal-id') idSucursal: string,
+    @Headers('x-usuario-id') idUsuario: string,
+    @Body() payload: { idProducto?: number; cantidad?: number; idProductoTerminado?: number; cantidadProducir?: number }
+  ) {
+    const pId = payload.idProducto ?? payload.idProductoTerminado;
+    const pCant = payload.cantidad ?? payload.cantidadProducir;
+    return this.posService.producirArticulo(Number(idSucursal), Number(pId), Number(pCant), Number(idUsuario));
+  }
+
+  // --- TRASPASOS DE INVENTARIO ---
+
+  @Post('inventario/traspasos')
+  crearTraspaso(
+    @Headers('x-usuario-id') idUsuario: string,
+    @Body() payload: { idSucursalOrigen: number; idSucursalDestino: number; productos: any[]; observaciones: string }
+  ) {
+    return this.posService.crearTraspaso(
+      payload.idSucursalOrigen,
+      payload.idSucursalDestino,
+      Number(idUsuario),
+      payload.productos,
+      payload.observaciones
+    );
+  }
+
+  @Get('inventario/traspasos')
+  obtenerTraspasos(@Headers('x-empresa-id') idEmpresa: string) {
+    return this.posService.obtenerTraspasos(Number(idEmpresa));
+  }
+
+  @Get('inventario/traspasos/:id/reporte')
+  async generarReporteTraspaso(@Param('id') id: string, @Res() res) {
+    const pdfBuffer = await this.posService.generarReporteTraspaso(Number(id));
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="traspaso_${id}.pdf"`,
+      'Content-Length': pdfBuffer.length,
+    });
+    res.end(pdfBuffer);
   }
 }

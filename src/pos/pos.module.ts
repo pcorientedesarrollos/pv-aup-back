@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { RolesGuard } from '../auth/roles.guard';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PosController } from './pos.controller';
 import { PosService } from './pos.service';
@@ -23,6 +25,9 @@ import { PosCompraDetalle } from './entities/pos-compra-detalle.entity';
 import { PosDevolucion } from './entities/pos-devolucion.entity';
 import { PosCotizacion } from './entities/pos-cotizacion.entity';
 import { PosCotizacionDetalle } from './entities/pos-cotizacion-detalle.entity';
+import { PosReceta } from './entities/pos-receta.entity';
+import { PosTraspaso } from './entities/pos-traspaso.entity';
+import { PosTraspasoDetalle } from './entities/pos-traspaso-detalle.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
@@ -48,7 +53,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       PosCompraDetalle,
       PosDevolucion,
       PosCotizacion,
-      PosCotizacionDetalle
+      PosCotizacionDetalle,
+      PosReceta,
+      PosTraspaso,
+      PosTraspasoDetalle
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -60,7 +68,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     }),
   ],
   controllers: [PosController],
-  providers: [PosService],
+  providers: [PosService, RolesGuard, Reflector],
   exports: [PosService]
 })
 export class PosModule {}
