@@ -364,20 +364,23 @@ export class PosService {
     return this.clienteRepo.find({ where, relations: { sucursal: { empresa: true } } });
   }
 
-  async verificarDuplicadoCliente(payload: any, idActual: number = 0) {
+  async verificarDuplicadoCliente(payload: any, idActual: number = 0, idSucursal?: number) {
     const idActualNum = Number(idActual);
+    const idSuc = idSucursal || payload.idSucursal;
+    const whereCondition = idSuc ? { sucursal: { idSucursal: idSuc } } : {};
+
     if (payload.rfc && payload.rfc.toUpperCase() !== 'XAXX010101000' && payload.rfc.toUpperCase() !== 'XEXX010101000') {
-      const existeRfc = await this.clienteRepo.findOne({ where: { rfc: payload.rfc } });
+      const existeRfc = await this.clienteRepo.findOne({ where: { rfc: payload.rfc, ...whereCondition } });
       if (existeRfc && existeRfc.idCliente !== idActualNum) {
-        throw new BadRequestException(`Ya existe un cliente con el RFC ${payload.rfc}`);
+        throw new BadRequestException(`Ya existe un cliente con el RFC ${payload.rfc} en esta sucursal`);
       }
     }
     if (payload.nombreCompleto) {
       const duplicadoNombre = await this.clienteRepo.findOne({
-        where: { nombreCompleto: payload.nombreCompleto }
+        where: { nombreCompleto: payload.nombreCompleto, ...whereCondition }
       });
       if (duplicadoNombre && duplicadoNombre.idCliente !== idActualNum) {
-        throw new BadRequestException(`Ya existe un cliente con el nombre exacto ${payload.nombreCompleto}`);
+        throw new BadRequestException(`Ya existe un cliente con el nombre exacto ${payload.nombreCompleto} en esta sucursal`);
       }
     }
   }
@@ -395,7 +398,7 @@ export class PosService {
       if (!cliente) throw new BadRequestException('Cliente no encontrado');
       if (cliente.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para modificar este cliente');
     }
-    await this.verificarDuplicadoCliente(payload, id);
+    await this.verificarDuplicadoCliente(payload, id, idSucursal);
     const updates = { ...payload };
     delete updates.idSucursal;
     delete updates.idCliente;
@@ -430,6 +433,7 @@ export class PosService {
       nombreCompleto: payload.nombreCompleto || payload.usuario,
       contrasenaHash: await bcrypt.hash(payload.password, 10),
       rol: rolFinal,
+      permisos: payload.permisos || [],
       activo: payload.oculto ? false : true,
     });
     return this.usuarioRepo.save(nuevo);
@@ -444,6 +448,7 @@ export class PosService {
     if (payload.password) usuario.contrasenaHash = await bcrypt.hash(payload.password, 10);
     if (payload.idPerfil) usuario.rol = payload.idPerfil == 1 ? 'Administrador' : (payload.idPerfil == 3 ? 'Soporte' : 'Cajero');
     if (payload.rol) usuario.rol = payload.rol;
+    if (payload.permisos) usuario.permisos = payload.permisos;
     if (payload.oculto !== undefined) usuario.activo = payload.oculto ? false : true;
     if (payload.idSucursal !== undefined) {
       usuario.sucursal = { idSucursal: payload.idSucursal } as any;
@@ -1947,25 +1952,28 @@ export class PosService {
     return this.proveedorRepo.find({ where, order: { nombre: 'ASC' } });
   }
 
-  async verificarDuplicadoProveedor(payload: any, idActual: number = 0) {
+  async verificarDuplicadoProveedor(payload: any, idActual: number = 0, idSucursal?: number) {
+    const idSuc = idSucursal || payload.idSucursal;
+    const whereCondition = idSuc ? { sucursal: { idSucursal: idSuc } } : {};
+
     if (payload.rfc && payload.rfc.toUpperCase() !== 'XAXX010101000' && payload.rfc.toUpperCase() !== 'XEXX010101000') {
-      const existeRfc = await this.proveedorRepo.findOne({ where: { rfc: payload.rfc } });
+      const existeRfc = await this.proveedorRepo.findOne({ where: { rfc: payload.rfc, ...whereCondition } });
       if (existeRfc && existeRfc.idProveedor !== idActual) {
-        throw new BadRequestException(`Ya existe un proveedor con el RFC ${payload.rfc}`);
+        throw new BadRequestException(`Ya existe un proveedor con el RFC ${payload.rfc} en esta sucursal`);
       }
     }
     if (payload.nombre) {
       const duplicadoNombre = await this.proveedorRepo.findOne({
-        where: { nombre: payload.nombre }
+        where: { nombre: payload.nombre, ...whereCondition }
       });
       if (duplicadoNombre && duplicadoNombre.idProveedor !== idActual) {
-        throw new BadRequestException(`Ya existe un proveedor con el nombre exacto ${payload.nombre}`);
+        throw new BadRequestException(`Ya existe un proveedor con el nombre exacto ${payload.nombre} en esta sucursal`);
       }
     }
   }
 
   async crearProveedor(payload: any, idSucursal?: number) {
-    await this.verificarDuplicadoProveedor(payload);
+    await this.verificarDuplicadoProveedor(payload, 0, idSucursal);
     const proveedor = this.proveedorRepo.create({
       nombre: payload.nombre,
       contacto: payload.contacto,
@@ -1979,7 +1987,7 @@ export class PosService {
   }
 
   async actualizarProveedor(id: number, payload: any, idSucursal?: number, rol?: string) {
-    await this.verificarDuplicadoProveedor(payload, id);
+    await this.verificarDuplicadoProveedor(payload, id, idSucursal);
     const proveedor = await this.proveedorRepo.findOne({ where: { idProveedor: id }, relations: { sucursal: true } });
     if (!proveedor) throw new NotFoundException('Proveedor no encontrado');
     // Validar pertenencia
@@ -2336,7 +2344,7 @@ export class PosService {
     return this.cotizacionRepo.find({
       where: idSucursal ? { sucursal: { idSucursal } } : {},
       order: { idCotizacion: 'DESC' },
-      relations: { detalles: { producto: true }, cliente: true, usuario: true }
+      relations: { detalles: { producto: true }, cliente: true, usuario: true, sucursal: { empresa: true } }
     });
   }
 
@@ -2788,7 +2796,8 @@ export class PosService {
         // Verificar duplicado por nombre o RFC
         const rfc = String(fila['rfc'] || '').trim() || null;
         if (rfc && rfc !== 'XAXX010101000') {
-          const existe = await this.clienteRepo.findOne({ where: { rfc } });
+          const whereCondition = idSucursal ? { sucursal: { idSucursal } } : {};
+          const existe = await this.clienteRepo.findOne({ where: { rfc, ...whereCondition } });
           if (existe) { errores.push({ fila: numFila, error: `RFC ${rfc} ya registrado (cliente: ${existe.nombreCompleto})` }); continue; }
         }
 
@@ -2841,7 +2850,8 @@ export class PosService {
       try {
         const rfc = String(fila['rfc'] || '').trim() || null;
         if (rfc) {
-          const existe = await this.proveedorRepo.findOne({ where: { rfc } });
+          const whereCondition = idSucursal ? { sucursal: { idSucursal } } : {};
+          const existe = await this.proveedorRepo.findOne({ where: { rfc, ...whereCondition } });
           if (existe) { errores.push({ fila: numFila, error: `RFC ${rfc} ya registrado (proveedor: ${existe.nombre})` }); continue; }
         }
 

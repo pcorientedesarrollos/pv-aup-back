@@ -21,6 +21,9 @@ export class PosUsuario {
   @Column({ default: true })
   activo: boolean;
 
+  @Column({ type: 'json', nullable: true })
+  permisos: string[];
+
   @CreateDateColumn({ name: 'fecha_creacion' })
   fechaCreacion: Date;
 

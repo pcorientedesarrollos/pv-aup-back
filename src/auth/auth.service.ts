@@ -32,7 +32,9 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
       idUsuario: usuario.idUsuario,
       usuario: usuario.nombreUsuario,
+      nombreCompleto: usuario.nombreCompleto,
       idPerfil: usuario.rol === 'Administrador' ? 1 : (usuario.rol === 'Soporte' ? 3 : 2),
+      permisos: usuario.permisos || [],
       app: 1,
     };
   }

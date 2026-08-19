@@ -25,6 +25,9 @@ export class UsuarioDto {
   @IsOptional()
   oculto?: boolean;
 
+  @IsOptional()
+  permisos?: string[];
+
   @IsNumber()
   @IsOptional()
   idSucursal?: number;
