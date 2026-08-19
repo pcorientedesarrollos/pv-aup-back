@@ -1327,7 +1327,7 @@ export class PosService {
     return `${baseUrl}${endpoint}`;
   }
 
-  async facturarVenta(idVenta: number, payload: { rfc: string, razonSocial: string, cp: string, regimen: string, usoCfdi: string, formaPago?: string, metodoPago?: string }) {
+  async facturarVenta(idVenta: number, payload: { rfc: string, razonSocial: string, cp: string, regimen: string, usoCfdi: string, formaPago?: string, metodoPago?: string, esExportacion?: boolean, taxResidence?: string, taxRegistrationNumber?: string, incoterm?: string, fraccionArancelaria?: string, unidadAduana?: string, tipoCambio?: number }) {
     const venta = await this.ventaRepo.findOne({
       where: { idVenta },
       relations: { detalles: { producto: true }, sucursal: true }
@@ -1344,7 +1344,7 @@ export class PosService {
     }
 
     // Preparar JSON para Facturama
-    const facturamaPayload = {
+    const facturamaPayload: any = {
       Receiver: {
         Rfc: payload.rfc,
         Name: payload.razonSocial,
@@ -1353,7 +1353,7 @@ export class PosService {
         TaxZipCode: payload.cp
       },
       CfdiType: "I",
-      ExpeditionPlace: "97137",
+      ExpeditionPlace: "97137", // Consider pulling from config/sucursal if possible
       PaymentForm: payload.formaPago || "01",
       PaymentMethod: payload.metodoPago || "PUE",
       Items: venta.detalles.map(d => {
@@ -1369,7 +1369,7 @@ export class PosService {
         
         const item: any = {
           ProductCode: d.producto?.claveProdServ || "01010101",
-          IdentificationNumber: d.producto?.codigoBarras || d.producto?.idProducto.toString(),
+          IdentificationNumber: d.producto?.codigoBarras || d.producto?.idProducto?.toString() || "0",
           Description: d.producto?.nombre || "Producto general",
           UnitCode: d.producto?.claveUnidad || "H87",
           TaxObject: tieneIva ? "02" : "01",
@@ -1398,6 +1398,57 @@ export class PosService {
         return item;
       })
     };
+
+    if (payload.esExportacion) {
+      facturamaPayload.Exportation = "02";
+      facturamaPayload.Currency = "USD";
+      facturamaPayload.ExchangeRate = payload.tipoCambio || 1;
+      
+      facturamaPayload.Receiver.TaxResidence = payload.taxResidence || "USA";
+      facturamaPayload.Receiver.TaxRegistrationNumber = payload.taxRegistrationNumber;
+
+      let subtotalGlobalUsd = 0;
+      let totalGlobalUsd = 0;
+
+      const mercancias = venta.detalles.map(d => {
+        const unitPriceSinIva = Number(d.precioUnitario);
+        const cantidad = Number(d.cantidad);
+        const descuento = Number(d.descuento || 0);
+        const subtotalSinIva = unitPriceSinIva * cantidad;
+        const baseIva = subtotalSinIva - descuento;
+        
+        const tieneIva = d.aplicaIva ?? true;
+        const iva = tieneIva ? baseIva * 0.16 : 0;
+        const totalLine = baseIva + iva;
+
+        const rate = payload.tipoCambio || 1;
+        
+        const valorDolares = Number((baseIva / rate).toFixed(2));
+        subtotalGlobalUsd += valorDolares;
+        totalGlobalUsd += Number((totalLine / rate).toFixed(2));
+
+        return {
+          ProductCodeForeignTrade: payload.fraccionArancelaria || "85171201",
+          IdentificationNumber: d.producto?.codigoBarras || d.producto?.idProducto?.toString() || "0",
+          Quantity: cantidad,
+          UnitMeasurement: payload.unidadAduana || "01",
+          UnitPrice: Number((unitPriceSinIva / rate).toFixed(4)),
+          Amount: valorDolares
+        };
+      });
+
+      facturamaPayload.Complemento = {
+        ForeignTrade: {
+          OperationType: "2",
+          CertificateOrigin: "0",
+          Incoterm: payload.incoterm || "FOB",
+          Subtotal: Number(subtotalGlobalUsd.toFixed(2)),
+          TotalUsd: Number(subtotalGlobalUsd.toFixed(2)), // El SAT suele pedir TotalUsd en base al valor mercancía (sin impuestos)
+          ExchangeRateUsd: payload.tipoCambio || 1,
+          Mercancias: mercancias
+        }
+      };
+    }
 
     try {
       // 1. Crear el CFDI
@@ -2391,16 +2442,18 @@ export class PosService {
 
     const movimientos: PosMovimientoInventario[] = [];
     const detallesVenta = cotizacion.detalles.map(d => {
-      const mov = new PosMovimientoInventario();
-      mov.tipoMovimiento = 'SALIDA';
-      mov.referencia = `Conversión de Cotización ${cotizacion.folio}`;
-      mov.cantidad = d.cantidad;
-      mov.producto = d.producto;
-      mov.sucursal = cotizacion.sucursal;
-      mov.usuario = { idUsuario } as PosUsuario;
-      movimientos.push(mov);
+      if (d.producto) {
+        const mov = new PosMovimientoInventario();
+        mov.tipoMovimiento = 'SALIDA';
+        mov.referencia = `Conversión de Cotización ${cotizacion.folio}`;
+        mov.cantidad = d.cantidad;
+        mov.producto = d.producto;
+        mov.sucursal = cotizacion.sucursal;
+        mov.usuario = { idUsuario } as PosUsuario;
+        movimientos.push(mov);
 
-      d.producto.stockActual = Number(d.producto.stockActual) - Number(d.cantidad);
+        d.producto.stockActual = Number(d.producto.stockActual) - Number(d.cantidad);
+      }
 
       return this.ventaRepo.manager.create(PosVentaDetalle, {
         venta: savedVenta,
@@ -2416,7 +2469,9 @@ export class PosService {
     await this.movimientoRepo.save(movimientos);
 
     for (const d of cotizacion.detalles) {
-      await this.productoRepo.save(d.producto);
+      if (d.producto) {
+        await this.productoRepo.save(d.producto);
+      }
     }
 
     cotizacion.estatus = 'Aceptada';

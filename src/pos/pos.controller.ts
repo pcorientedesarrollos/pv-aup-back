@@ -363,7 +363,7 @@ export class PosController {
   @Post('facturar/:idVenta')
   facturarVenta(
     @Param('idVenta') idVenta: string,
-    @Body() payload: { rfc: string, razonSocial: string, cp: string, regimen: string, usoCfdi: string, formaPago: string, metodoPago: string }
+    @Body() payload: any
   ) {
     return this.posService.facturarVenta(Number(idVenta), payload);
   }
@@ -373,6 +373,7 @@ export class PosController {
     return this.posService.cancelarFactura(Number(idFactura), payload.motivo, payload.uuidSustitucion, user?.idSucursal, user?.rol);
   }
 
+  @Public()
   @Get('facturas/:idFacturama/pdf')
   async descargarFacturaPdf(@Param('idFacturama') idFacturama: string, @Res() res: any) {
     try {
@@ -391,6 +392,7 @@ export class PosController {
     }
   }
 
+  @Public()
   @Get('facturas/:idFacturama/xml')
   async descargarFacturaXml(@Param('idFacturama') idFacturama: string, @Res() res: any) {
     try {
@@ -409,6 +411,7 @@ export class PosController {
     }
   }
 
+  @Public()
   @Get('facturas/:idFactura/paquete-cancelacion')
   async descargarPaqueteCancelacion(@Param('idFactura') idFactura: string, @Res() res: any) {
     try {
