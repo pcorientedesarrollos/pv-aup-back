@@ -1557,76 +1557,7 @@ export class PosService {
           throw new Error('No se encontró el PDF en la respuesta');
         }
       } catch (errPdf: any) {
-        console.warn('Fallo al obtener el Acuse PDF real, intentando extraer XML del status...', errPdf.message);
-        
-        try {
-          const urlStatus = this.getFacturamaUrl(`/cfdi/${factura.facturapiId}`);
-          const responseStatus = await axios.get(urlStatus, { headers: this.getFacturamaHeaders() });
-          if (responseStatus.data && responseStatus.data.AcuseXmlBase64) {
-            acuseBuffer = Buffer.from(responseStatus.data.AcuseXmlBase64, 'base64');
-            isAcuseXml = true;
-          } else {
-            throw new Error('No se encontró AcuseXmlBase64 en la respuesta de Facturama');
-          }
-        } catch (err: any) {
-          // Fallback a PDF simulado si todo falla
-          console.warn('No se pudo obtener el Acuse real de Facturama. Generando Acuse PDF simulado.', err.message);
-
-          const fallbackPdf = await PDFLibDocument.create();
-          const fontBold = await fallbackPdf.embedFont(StandardFonts.HelveticaBold);
-          const fontRegular = await fallbackPdf.embedFont(StandardFonts.Helvetica);
-
-        const page = fallbackPdf.addPage([595, 842]); // A4
-
-        // Header
-        page.drawText('Servicio de Administración Tributaria', { x: 180, y: 770, size: 14, font: fontRegular, color: rgb(0, 0, 0) });
-        page.drawText('Acuse de Cancelación CFDI', { x: 215, y: 755, size: 12, font: fontRegular });
-        page.drawText('Página 1 de 1', { x: 490, y: 810, size: 8, font: fontRegular });
-
-        const labels = [
-          'FECHA EMISIÓN',
-          'RFC EMISOR',
-          'RFC RECEPTOR',
-          'ESTADO DEL CFDI',
-          'ESTADO DE LA CANCELACIÓN',
-          'FOLIO FISCAL',
-          'SELLO DIGITAL SAT',
-          'MOTIVO DE CANCELACIÓN',
-          'UUID QUE SUSTITUYE'
-        ];
-
-        const rfcEmisor = 'PUR260326HR0'; // Emisor genérico para Sandbox
-        const rfcReceptor = factura.rfcCliente || 'XAXX010101000';
-        const dateStr = new Date().toLocaleString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-
-        const values = [
-          dateStr,
-          rfcEmisor,
-          rfcReceptor,
-          'Cancelado',
-          'Cancelado sin aceptación',
-          factura.uuid || 'N/A',
-          'qRWzHPVTRHYyDQTnrpPYtOBmb5Raaddb4XZH1DNIhhuHrh7RKwvcwh05wEu1lgUnej9BwsLd4u1SeYyawmaF2zlhzssP19yhC',
-          '03',
-          ''
-        ];
-
-        const leftX = 50;
-        const rightX = 220;
-        let startY = 670;
-        const lineGap = 25;
-
-        for (let i = 0; i < labels.length; i++) {
-          page.drawText(labels[i], { x: leftX, y: startY - (i * lineGap), size: 9, font: fontBold });
-          page.drawText(values[i], { x: rightX, y: startY - (i * lineGap), size: 9, font: fontRegular });
-        }
-
-        // Footer
-        page.drawText('Para cualquier duda o aclaración comuniquese al 800 351 0250', { x: 150, y: 100, size: 8, font: fontRegular });
-
-        const pdfBytes = await fallbackPdf.save();
-        acuseBuffer = Buffer.from(pdfBytes);
-        }
+        throw new BadRequestException('El acuse real aún no está disponible en Facturama/SAT. Por favor, espere unos minutos e intente descargar de nuevo.');
       }
       // 4. Comprimir en un archivo ZIP
       const zip = new AdmZip();
