@@ -2626,8 +2626,8 @@ export class PosService {
     let ejemplo: any[] = [];
 
     if (tipo === 'productos') {
-      headers = ['nombre*', 'precio*', 'stock', 'stockMinimo', 'codigoBarras', 'categoria', 'iva', 'descripcion'];
-      ejemplo = [{ 'nombre*': 'Coca Cola 600ml', 'precio*': 18, 'stock': 50, 'stockMinimo': 5, 'codigoBarras': '7501055300938', 'categoria': 'Bebidas', 'iva': 16, 'descripcion': 'Refresco' }];
+      headers = ['nombre*', 'precioCompra*', 'utilidad%', 'stock', 'stockMinimo', 'codigoBarras', 'categoria', 'aplicaIva', 'tasaIva', 'tipoArticulo', 'unidadMedida', 'claveSAT', 'unidadSAT'];
+        ejemplo = [{ 'nombre*': 'Miel a Granel', 'precioCompra*': 40.00, 'utilidad%': 25, 'stock': 100, 'stockMinimo': 10, 'codigoBarras': 'MG-001', 'categoria': 'Granel', 'aplicaIva': 'NO', 'tasaIva': 0, 'tipoArticulo': 'Terminado', 'unidadMedida': 'kg', 'claveSAT': '50192403', 'unidadSAT': 'KGM' }];
     } else if (tipo === 'clientes') {
       headers = ['nombreCompleto*', 'rfc', 'telefono', 'correo', 'direccion', 'cp', 'regimenFiscal', 'usoCfdi', 'formaPago', 'metodoPago'];
       ejemplo = [{ 'nombreCompleto*': 'Juan Pérez García', 'rfc': 'PEGJ900101ABC', 'telefono': '6181234567', 'correo': 'juan@ejemplo.com', 'direccion': 'Calle Falsa 123', 'cp': '34000', 'regimenFiscal': '616', 'usoCfdi': 'G03', 'formaPago': '01', 'metodoPago': 'PUE' }];
@@ -2656,10 +2656,13 @@ export class PosService {
       const numFila = i + 2; // +2 porque fila 1 es el encabezado
 
       const nombre = String(fila['nombre*'] || fila['nombre'] || '').trim();
-      const precio = parseFloat(fila['precio*'] || fila['precio'] || '0');
-
-      if (!nombre) { errores.push({ fila: numFila, error: 'El campo "nombre" es obligatorio' }); continue; }
-      if (isNaN(precio) || precio < 0) { errores.push({ fila: numFila, error: 'El campo "precio" debe ser un número válido' }); continue; }
+      const precioCompra = parseFloat(fila['precioCompra*'] || fila['precioCompra'] || '0');
+        const utilidad = parseFloat(fila['utilidad%'] || fila['utilidad'] || '18');
+        
+        if (!nombre) { errores.push({ fila: numFila, error: 'El campo "nombre" es obligatorio' }); continue; }
+        if (isNaN(precioCompra) || precioCompra < 0) { errores.push({ fila: numFila, error: 'El campo "precioCompra" es inv�lido' }); continue; }
+        
+        const precioPublico = precioCompra * (1 + (utilidad / 100));
 
       try {
         // Auto-crear categora si se especifica y no existe
@@ -2680,21 +2683,35 @@ export class PosService {
           categoriaObj = cat;
         }
 
-        const producto = this.productoRepo.create({
-          nombre,
-          precioUnitario: precio,
-          precioPublico: precio,
-          stockActual: parseInt(fila['stock'] || '0', 10) || 0,
-          stockMinimo: parseInt(fila['stockMinimo'] || '0', 10) || 0,
-          codigoBarras: String(fila['codigoBarras'] || '').trim() || undefined,
-          iva: parseFloat(fila['iva'] || '16') || 16,
-          descripcion: String(fila['descripcion'] || '').trim() || undefined,
-          claveProdServ: '01010101',
-          claveUnidad: 'H87',
-          activo: true,
-          ...(categoriaObj ? { categoria: categoriaObj } : {}),
-          ...(idSucursal ? { sucursal: { idSucursal } } : {}),
-        });
+        const aplicaIvaStr = String(fila['aplicaIva'] || '').toUpperCase();
+          const aplicaIva = aplicaIvaStr === 'SI' || aplicaIvaStr === 'S�' || aplicaIvaStr === 'TRUE' || aplicaIvaStr === '1' || aplicaIvaStr === 'YES';
+          const ivaRate = parseFloat(fila['tasaIva'] || fila['iva'] || (aplicaIva ? '16' : '0'));
+          
+          const baseIva = precioPublico; // Asumimos que precioPublico no incluye descuentos fijos por defecto al importar
+          const ivaCalc = aplicaIva ? (baseIva * (ivaRate / 100)) : 0;
+          const precioVenta = baseIva + ivaCalc;
+
+          const producto = this.productoRepo.create({
+            nombre,
+            precioCompra,
+            utilidad,
+            precioUnitario: precioPublico,
+            precioPublico,
+            precioVenta,
+            aplicaIva,
+            iva: ivaRate,
+            stockActual: parseInt(fila['stock'] || '0', 10) || 0,
+            stockMinimo: parseInt(fila['stockMinimo'] || '0', 10) || 0,
+            codigoBarras: String(fila['codigoBarras'] || '').trim() || undefined,
+            descripcion: String(fila['descripcion'] || '').trim() || undefined,
+            tipoArticulo: String(fila['tipoArticulo'] || '').trim() || 'Terminado',
+            unidadMedida: String(fila['unidadMedida'] || '').trim() || 'Pza',
+            claveProdServ: String(fila['claveSAT'] || fila['claveProdServ'] || '').trim() || '01010101',
+            claveUnidad: String(fila['unidadSAT'] || fila['claveUnidad'] || '').trim() || 'H87',
+            activo: true,
+            ...(categoriaObj ? { categoria: categoriaObj } : {}),
+            ...(idSucursal ? { sucursal: { idSucursal } } : {}),
+          });
 
         await this.productoRepo.save(producto);
 
