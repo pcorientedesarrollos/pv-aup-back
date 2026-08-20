@@ -609,8 +609,10 @@ export class PosService {
           producto: producto,
           cantidad: item.cantidad,
           precioUnitario: item.precioUnitario,
-          descuento: item.descuento || 0,
-          subtotal: (item.cantidad * item.precioUnitario) - (item.descuento || 0)
+            descuento: item.descuento || 0,
+            subtotal: (item.cantidad * item.precioUnitario) - (item.descuento || 0),
+            aplicaIva: item.aplicaIva !== undefined ? item.aplicaIva : producto.aplicaIva,
+            montoIva: item.montoIva || 0
         });
         await queryRunner.manager.save(detalle);
 
@@ -1442,17 +1444,30 @@ export class PosService {
         };
       });
 
-      facturamaPayload.Complemento = {
-        ForeignTrade: {
-          OperationType: "2",
-          CertificateOrigin: "0",
-          Incoterm: payload.incoterm || "FOB",
-          Subtotal: Number(subtotalGlobalUsd.toFixed(2)),
-          TotalUsd: Number(subtotalGlobalUsd.toFixed(2)), // El SAT suele pedir TotalUsd en base al valor mercancía (sin impuestos)
-          ExchangeRateUsd: payload.tipoCambio || 1,
-          Mercancias: mercancias
-        }
-      };
+              facturamaPayload.Complemento = {
+          ForeignTrade: {
+            OperationType: "2",
+            RequestCode: "A1",
+            CertificateOrigin: "0",
+            Incoterm: payload.incoterm || "FOB",
+            Subtotal: Number(subtotalGlobalUsd.toFixed(2)),
+            TotalUsd: Number(subtotalGlobalUsd.toFixed(2)),
+            ExchangeRateUsd: payload.tipoCambio || 1,
+            Mercancias: mercancias,
+            Receiver: {
+              NumRegIdTrib: payload.taxRegistrationNumber || "000000000",
+              Address: {
+                Street: "No Especificado",
+                Neighborhood: "No Especificado",
+                Locality: "No Especificado",
+                Municipality: "No Especificado",
+                State: payload.taxResidence === 'USA' ? 'CA' : (payload.taxResidence === 'CAN' ? 'ON' : 'SIN'),
+                ZipCode: payload.cp || "00000",
+                Country: payload.taxResidence || "USA"
+              }
+            }
+          }
+        };
     }
 
     try {
@@ -3209,3 +3224,6 @@ export class PosService {
     return Buffer.from(pdfBytes);
   }
 }
+
+
+
