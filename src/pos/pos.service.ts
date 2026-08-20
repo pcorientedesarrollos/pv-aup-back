@@ -1371,7 +1371,8 @@ export class PosService {
         const baseIva = subtotalSinIva - descuento;
         
         const tieneIva = d.aplicaIva ?? true;
-        const iva = tieneIva ? baseIva * 0.16 : 0;
+          const tasaIva = d.producto?.iva !== undefined ? Number(d.producto.iva) / 100 : 0.16;
+          const iva = tieneIva ? baseIva * tasaIva : 0;
         const totalLine = baseIva + iva;
         
         const item: any = {
@@ -1390,9 +1391,9 @@ export class PosService {
           item.Taxes = [
             {
               Total: Number(iva.toFixed(4)),
-              Name: "IVA",
-              Base: Number(baseIva.toFixed(4)),
-              Rate: 0.16,
+                Name: "IVA",
+                Base: Number(baseIva.toFixed(4)),
+                Rate: d.producto?.iva !== undefined ? Number(d.producto.iva) / 100 : 0.16,
               IsRetention: false
             }
           ];
@@ -1425,7 +1426,8 @@ export class PosService {
         const baseIva = subtotalSinIva - descuento;
         
         const tieneIva = d.aplicaIva ?? true;
-        const iva = tieneIva ? baseIva * 0.16 : 0;
+          const tasaIva = d.producto?.iva !== undefined ? Number(d.producto.iva) / 100 : 0.16;
+          const iva = tieneIva ? baseIva * tasaIva : 0;
         const totalLine = baseIva + iva;
 
         const rate = payload.tipoCambio || 1;
