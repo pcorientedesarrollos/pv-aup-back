@@ -846,8 +846,18 @@ export class PosService {
       
       // Actualizar el costo si se solicitó
       if (payload.actualizarCosto && payload.costoUnitario) {
-        producto.precioUnitario = payload.costoUnitario;
-      }
+          producto.precioCompra = payload.costoUnitario;
+          const utilidad = Number(producto.utilidad) || 0;
+          const precioPublico = producto.precioCompra * (1 + (utilidad / 100));
+          producto.precioUnitario = precioPublico;
+          producto.precioPublico = precioPublico;
+          
+          const aplicaIva = producto.aplicaIva ?? false;
+          const ivaRate = Number(producto.iva) || 0;
+          const baseIva = precioPublico - (Number(producto.descuento) || 0);
+          const ivaCalc = aplicaIva ? (baseIva * (ivaRate / 100)) : 0;
+          producto.precioVenta = baseIva + ivaCalc;
+        }
       
       await queryRunner.manager.save(producto);
 
@@ -2063,8 +2073,18 @@ export class PosService {
         if (pCompra) {
           pCompra.stockActual = Number(pCompra.stockActual) + Number(item.cantidad);
           if (item.actualizarCosto) {
-            pCompra.precioUnitario = item.precioCosto;
-          }
+              pCompra.precioCompra = item.precioCosto;
+              const utilidad = Number(pCompra.utilidad) || 0;
+              const precioPublico = pCompra.precioCompra * (1 + (utilidad / 100));
+              pCompra.precioUnitario = precioPublico;
+              pCompra.precioPublico = precioPublico;
+              
+              const aplicaIva = pCompra.aplicaIva ?? false;
+              const ivaRate = Number(pCompra.iva) || 0;
+              const baseIva = precioPublico - (Number(pCompra.descuento) || 0);
+              const ivaCalc = aplicaIva ? (baseIva * (ivaRate / 100)) : 0;
+              pCompra.precioVenta = baseIva + ivaCalc;
+            }
           await queryRunner.manager.save(PosProducto, pCompra);
         }
 
