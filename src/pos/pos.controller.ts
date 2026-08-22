@@ -72,8 +72,26 @@ export class PosController {
   }
 
   @Get('productos')
-  getProductos(@Headers("x-sucursal-id") idSucursal: string) {
-    return this.posService.getProductos(Number(idSucursal));
+  getProductos(
+    @Headers("x-sucursal-id") idSucursal: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string
+  ) {
+    return this.posService.getProductos(
+      Number(idSucursal),
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 20,
+      search
+    );
+  }
+  
+  @Get('productos/buscar')
+  buscarProductoPorCodigo(
+    @Headers("x-sucursal-id") idSucursal: string,
+    @Query('codigo') codigo: string
+  ) {
+    return this.posService.buscarProductoPorCodigo(codigo, Number(idSucursal));
   }
 
   @Get('productos/:id/proveedores')
@@ -126,8 +144,18 @@ export class PosController {
   }
 
   @Get('clientes')
-  getClientes(@Headers("x-sucursal-id") idSucursal: string) {
-    return this.posService.getClientes(Number(idSucursal));
+  getClientes(
+    @Headers("x-sucursal-id") idSucursal: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string
+  ) {
+    return this.posService.getClientes(
+      Number(idSucursal),
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 20,
+      search
+    );
   }
 
   @Post('clientes/alta-rapida')

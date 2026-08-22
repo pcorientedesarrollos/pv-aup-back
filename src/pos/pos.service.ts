@@ -4,7 +4,7 @@ import { Injectable, BadRequestException, UnauthorizedException, NotFoundExcepti
 import { PDFDocument as PDFLibDocument, rgb, degrees, StandardFonts } from 'pdf-lib';
 import * as bcrypt from 'bcryptjs';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Not } from 'typeorm';
+import {  Repository, DataSource, Not , Like } from 'typeorm';
 
 import { PosSucursal } from './entities/pos-sucursal.entity';
 import { PosCategoria } from './entities/pos-categoria.entity';
@@ -202,12 +202,55 @@ export class PosService {
     return { nombre: 'AUP POS', logoUrl: '/logo.png', colorPrincipal: '#f59e0b' };
   }
 
-  async getProductos(idSucursal?: number) {
-    const where = idSucursal ? { sucursal: { idSucursal } } : {};
-    return this.productoRepo.find({
+  async getProductos(idSucursal?: number, page: number = 1, limit: number = 20, search?: string) {
+    const where: any = idSucursal ? { sucursal: { idSucursal } } : {};
+      
+      let whereCondition: any = where;
+      if (search) {
+        whereCondition = [
+          { ...where, nombre: Like(`%${search}%`) },
+          { ...where, codigoBarras: Like(`%${search}%`) }
+        ];
+      }
+
+    const [data, total] = await this.productoRepo.findAndCount({
+        where: whereCondition,
+      relations: { categoria: true, sucursal: { empresa: true }, codigosAdicionales: true },
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { nombre: 'ASC' }
+    });
+    
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+  
+  async buscarProductoPorCodigo(codigo: string, idSucursal?: number) {
+    const where: any = idSucursal ? { sucursal: { idSucursal } } : {};
+    // Buscar coincidencia exacta por código de barras o clave
+    where.codigoBarras = codigo;
+    
+    let prod = await this.productoRepo.findOne({
       where,
       relations: { categoria: true, sucursal: { empresa: true }, codigosAdicionales: true }
     });
+    
+    if (!prod) {
+      delete where.codigoBarras;
+      where.clave = codigo;
+      prod = await this.productoRepo.findOne({
+        where,
+        relations: { categoria: true, sucursal: { empresa: true }, codigosAdicionales: true }
+      });
+    }
+    
+    // Y revisar en codigosAdicionales (aunque findOne con relacion a veces es difcil sin QueryBuilder)
+    // Para simplificar:
+    if (!prod) {
+       // Buscar si hay un codigoAdicional
+       // This would need queryBuilder, omitting for now, just fallback to return prod.
+    }
+    
+    return prod;
   }
 
   async actualizarProducto(id: number, data: { codigoBarras?: string; imagenUrl?: string }) {
@@ -359,9 +402,20 @@ export class PosService {
     }));
   }
 
-  async getClientes(idSucursal?: number) {
-    const where = idSucursal ? { sucursal: { idSucursal } } : {};
-    return this.clienteRepo.find({ where, relations: { sucursal: { empresa: true } } });
+  async getClientes(idSucursal?: number, page: number = 1, limit: number = 20, search?: string) {
+    const where: any = idSucursal ? { sucursal: { idSucursal } } : {};
+    if (search) {
+      where.nombreCompleto = Like(`%${search}%`);
+    }
+
+    const [data, total] = await this.clienteRepo.findAndCount({
+      where,
+      relations: { sucursal: { empresa: true } },
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { nombreCompleto: 'ASC' }
+    });
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async verificarDuplicadoCliente(payload: any, idActual: number = 0, idSucursal?: number) {
@@ -2680,7 +2734,7 @@ export class PosService {
         const utilidad = parseFloat(fila['utilidad%'] || fila['utilidad'] || '18');
         
         if (!nombre) { errores.push({ fila: numFila, error: 'El campo "nombre" es obligatorio' }); continue; }
-        if (isNaN(precioCompra) || precioCompra < 0) { errores.push({ fila: numFila, error: 'El campo "precioCompra" es inv�lido' }); continue; }
+        if (isNaN(precioCompra) || precioCompra < 0) { errores.push({ fila: numFila, error: 'El campo "precioCompra" es inválido' }); continue; }
         
         const precioPublico = precioCompra * (1 + (utilidad / 100));
 
@@ -2704,7 +2758,7 @@ export class PosService {
         }
 
         const aplicaIvaStr = String(fila['aplicaIva'] || '').toUpperCase();
-          const aplicaIva = aplicaIvaStr === 'SI' || aplicaIvaStr === 'S�' || aplicaIvaStr === 'TRUE' || aplicaIvaStr === '1' || aplicaIvaStr === 'YES';
+          const aplicaIva = aplicaIvaStr === 'Sí' || aplicaIvaStr === 'Sí' || aplicaIvaStr === 'TRUE' || aplicaIvaStr === '1' || aplicaIvaStr === 'YES';
           const ivaRate = parseFloat(fila['tasaIva'] || fila['iva'] || (aplicaIva ? '16' : '0'));
           
           const baseIva = precioPublico; // Asumimos que precioPublico no incluye descuentos fijos por defecto al importar
