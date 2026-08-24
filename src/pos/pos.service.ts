@@ -328,7 +328,7 @@ export class PosService {
     }
     
     if (data.sumarStock !== undefined && data.sumarStock !== 0) {
-      await this.productoRepo.increment({ idProducto: id }, 'stock', data.sumarStock);
+      await this.productoRepo.increment({ idProducto: id }, 'stockActual', data.sumarStock);
     }
     
     return this.productoRepo.findOne({ where: { idProducto: id }, relations: { categoria: true, codigosAdicionales: true } });
