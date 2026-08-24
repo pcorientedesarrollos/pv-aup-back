@@ -560,9 +560,9 @@ export class PosService {
     const ventasCompletadas = ventas.filter(v => v.estatus === 'Completada');
     const ventasCanceladas = ventas.filter(v => v.estatus === 'Cancelada');
 
-    const totalEfectivo = ventasCompletadas.filter(v => v.metodoPago === 'Efectivo').reduce((acc, v) => acc + Number(v.totalPagado), 0);
-    const totalTarjeta = ventasCompletadas.filter(v => v.metodoPago === 'Tarjeta').reduce((acc, v) => acc + Number(v.totalPagado), 0);
-    const totalTransferencia = ventasCompletadas.filter(v => v.metodoPago === 'Transferencia').reduce((acc, v) => acc + Number(v.totalPagado), 0);
+    const totalEfectivo = ventasCompletadas.reduce((acc, v) => acc + Number(v.efectivo), 0);
+    const totalTarjeta = ventasCompletadas.reduce((acc, v) => acc + Number(v.tarjeta), 0);
+    const totalTransferencia = ventasCompletadas.reduce((acc, v) => acc + Number(v.transferencia), 0);
     const totalCancelado = ventasCanceladas.reduce((acc, v) => acc + Number(v.totalPagado), 0);
 
     const esperado = Number(corte.fondoInicial) + totalEfectivo + totalTarjeta + totalTransferencia;
