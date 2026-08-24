@@ -203,7 +203,7 @@ export class PosService {
   }
 
   async getProductos(idSucursal?: number, page: number = 1, limit: number = 20, search?: string) {
-    const where: any = idSucursal ? { sucursal: { idSucursal } } : {};
+    let where: any = idSucursal ? { sucursal: { idSucursal } } : {};
       
       let whereCondition: any = where;
       if (search) {
@@ -403,9 +403,12 @@ export class PosService {
   }
 
   async getClientes(idSucursal?: number, page: number = 1, limit: number = 20, search?: string) {
-    const where: any = idSucursal ? { sucursal: { idSucursal } } : {};
+    let where: any = idSucursal ? { sucursal: { idSucursal } } : {};
     if (search) {
-      where.nombreCompleto = Like(`%${search}%`);
+      where = [
+        { ...where, nombreCompleto: Like(`%${search}%`) },
+        { ...where, rfc: Like(`%${search}%`) }
+      ];
     }
 
     const [data, total] = await this.clienteRepo.findAndCount({
