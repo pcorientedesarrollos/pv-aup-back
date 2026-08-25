@@ -1440,7 +1440,7 @@ export class PosService {
         const tieneIva = d.aplicaIva ?? true;
           const tasaIva = d.producto?.iva !== undefined ? Number(d.producto.iva) / 100 : 0.16;
           const iva = tieneIva ? baseIva * tasaIva : 0;
-        const totalLine = baseIva + iva;
+        const totalLine = baseIva;
         
         const item: any = {
           ProductCode: d.producto?.claveProdServ || "01010101",
@@ -1495,7 +1495,7 @@ export class PosService {
         const tieneIva = d.aplicaIva ?? true;
           const tasaIva = d.producto?.iva !== undefined ? Number(d.producto.iva) / 100 : 0.16;
           const iva = tieneIva ? baseIva * tasaIva : 0;
-        const totalLine = baseIva + iva;
+        const totalLine = baseIva;
 
         const rate = payload.tipoCambio || 1;
         
