@@ -812,6 +812,8 @@ export class PosService {
       const descripcion = c['@_Descripcion'];
       const cantidad = Number(c['@_Cantidad'] || 0);
       const valorUnitario = Number(c['@_ValorUnitario'] || 0);
+        const descuento = Number(c['@_Descuento'] || 0);
+        const costoUnitarioReal = cantidad > 0 ? ((valorUnitario * cantidad) - descuento) / cantidad : valorUnitario;
       const noIdentificacion = c['@_NoIdentificacion'] || '';
 
       let productoMatch: any = null;
@@ -840,7 +842,7 @@ export class PosService {
         conceptoXml: descripcion,
         noIdentificacion: noIdentificacion,
         cantidad: cantidad,
-        costoUnitario: valorUnitario,
+        costoUnitario: costoUnitarioReal,
         productoEncontrado: productoMatch ? {
           idProducto: productoMatch.idProducto,
           nombre: productoMatch.nombre,
@@ -2614,10 +2616,13 @@ export class PosService {
 
         // 2. Buscar linea de precios si no vinieron en la misma linea
         if (currentProduct && trimmed.startsWith('$')) {
-          const priceMatch = trimmed.match(/^\$([0-9.,]+)\s*\$([0-9.,]+)$/);
+          const priceMatch = trimmed.match(/^\$([0-9.,]+)(?:\s*\$([0-9.,]+))?\s*\$([0-9.,]+)$/);
           if (priceMatch) {
             const precioStr = priceMatch[1].replace(/,/g, '');
-            currentProduct.costoUnitario = parseFloat(precioStr);
+            const descuentoStr = priceMatch[2] ? priceMatch[2].replace(/,/g, '') : '0';
+            const precioBruto = parseFloat(precioStr);
+            const descuento = parseFloat(descuentoStr);
+            currentProduct.costoUnitario = currentProduct.cantidad > 0 ? ((precioBruto * currentProduct.cantidad) - descuento) / currentProduct.cantidad : precioBruto;
             if (currentProduct.cantidad > 0 && currentProduct.costoUnitario > 0) {
               conceptos.push({ ...currentProduct });
             }
@@ -3320,6 +3325,7 @@ export class PosService {
     return Buffer.from(pdfBytes);
   }
 }
+
 
 
 
