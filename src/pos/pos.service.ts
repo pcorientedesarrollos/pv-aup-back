@@ -4,7 +4,7 @@ import { Injectable, BadRequestException, UnauthorizedException, NotFoundExcepti
 import { PDFDocument as PDFLibDocument, rgb, degrees, StandardFonts } from 'pdf-lib';
 import * as bcrypt from 'bcryptjs';
 import { InjectRepository } from '@nestjs/typeorm';
-import {  Repository, DataSource, Not , Like } from 'typeorm';
+import {  Repository, DataSource, Not , Like, IsNull, LessThanOrEqual } from 'typeorm';
 
 import { PosSucursal } from './entities/pos-sucursal.entity';
 import { PosCategoria } from './entities/pos-categoria.entity';
@@ -1173,6 +1173,10 @@ export class PosService {
     const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
     const inicioSemana = new Date(hoy);
     inicioSemana.setDate(hoy.getDate() - 6);
+    
+    const inicioSemanaAnterior = new Date(inicioSemana);
+    inicioSemanaAnterior.setDate(inicioSemana.getDate() - 7);
+    
     const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
 
     // Ventas del día
@@ -1182,6 +1186,23 @@ export class PosService {
       .andWhere("v.estatus != 'Cancelada'")
       .select(['SUM(v.totalPagado) as total', 'COUNT(*) as cantidad'])
       .getRawOne();
+
+    // Ventas por método de pago hoy
+    const ventasPagoHoy = await this.ventaRepo
+      .createQueryBuilder('v')
+      .where('v.fechaVenta >= :inicio', { inicio: inicioHoy })
+      .leftJoin('v.usuario', 'u').andWhere('u.id_sucursal = :idSucursal', { idSucursal })
+      .andWhere("v.estatus != 'Cancelada'")
+      .select(['v.metodoPago as metodo', 'SUM(v.totalPagado) as total'])
+      .groupBy('v.metodoPago')
+      .getRawMany();
+
+    const metodosPago = { Efectivo: 0, Tarjeta: 0, Transferencia: 0 };
+    ventasPagoHoy.forEach(v => {
+      if (v.metodo === 'Efectivo') metodosPago.Efectivo = Number(v.total) || 0;
+      else if (v.metodo === 'Tarjeta') metodosPago.Tarjeta = Number(v.total) || 0;
+      else if (v.metodo === 'Transferencia') metodosPago.Transferencia = Number(v.total) || 0;
+    });
 
     // Ventas de la semana
     const ventasSemana = await this.ventaRepo
@@ -1199,6 +1220,42 @@ export class PosService {
       .andWhere("v.estatus != 'Cancelada'")
       .select(['SUM(v.totalPagado) as total', 'COUNT(*) as cantidad'])
       .getRawOne();
+
+    // Ventas del mes sin facturar
+    const ventasSinFacturarMes = await this.ventaRepo
+      .createQueryBuilder('v')
+      .leftJoin('v.facturas', 'f')
+      .leftJoin('v.usuario', 'u')
+      .where('v.fechaVenta >= :inicio', { inicio: inicioMes })
+      .andWhere('u.id_sucursal = :idSucursal', { idSucursal })
+      .andWhere("v.estatus != 'Cancelada'")
+      .andWhere('f.idFactura IS NULL')
+      .getCount();
+
+    // Cotizaciones activas hoy
+    const cotizacionesHoy = await this.cotizacionRepo
+      .createQueryBuilder('c')
+      .leftJoin('c.usuario', 'u')
+      .where('c.fechaEmision >= :inicio', { inicio: inicioHoy })
+      .andWhere('u.id_sucursal = :idSucursal', { idSucursal })
+      .getCount();
+
+    // Estado de caja actual
+    const corteActivo = await this.corteRepo.findOne({
+      where: { 
+        sucursal: { idSucursal: idSucursal }, 
+        fechaCierre: IsNull() 
+      },
+      order: { idCorte: 'DESC' }
+    });
+
+    let cajaAbierta = false;
+    let cajaSaldo = 0;
+    if (corteActivo) {
+      cajaAbierta = true;
+      // Saldo es fondo base + lo vendido en efectivo
+      cajaSaldo = Number(corteActivo.fondoInicial) + metodosPago.Efectivo; 
+    }
 
     // Ticket promedio del día
     const ticketPromedio = ventasHoy.cantidad > 0
@@ -1221,10 +1278,13 @@ export class PosService {
       .limit(5)
       .getRawMany();
 
-    // Ingresos por día — últimos 7 días
+    // Ingresos por día — últimos 7 días y semana anterior
     const limiteSemana = new Date(hoy);
     limiteSemana.setDate(hoy.getDate() - 6);
     limiteSemana.setHours(0, 0, 0, 0);
+    
+    const limiteSemanaAnt = new Date(limiteSemana);
+    limiteSemanaAnt.setDate(limiteSemana.getDate() - 7);
 
     const ventasDiarias = await this.ventaRepo
       .createQueryBuilder('v')
@@ -1233,7 +1293,7 @@ export class PosService {
         'SUM(v.totalPagado) as total'
       ])
       .leftJoin('v.usuario', 'u')
-      .where('v.fechaVenta >= :inicio', { inicio: limiteSemana })
+      .where('v.fechaVenta >= :inicio', { inicio: limiteSemanaAnt }) // Traemos 14 días
       .andWhere('u.id_sucursal = :idSucursal', { idSucursal })
       .andWhere("v.estatus != 'Cancelada'")
       .groupBy("DATE_FORMAT(v.fechaVenta, '%Y-%m-%d')")
@@ -1243,10 +1303,12 @@ export class PosService {
     ventasDiarias.forEach(vd => mapaVentas.set(vd.fechaStr, Number(vd.total)));
 
     const dias: { fecha: string; total: number }[] = [];
+    const diasAnterior: { fecha: string; total: number }[] = [];
+    
     for (let i = 6; i >= 0; i--) {
+      // Semana actual
       const d = new Date(hoy);
       d.setDate(hoy.getDate() - i);
-      
       const mes = String(d.getMonth() + 1).padStart(2, '0');
       const dia = String(d.getDate()).padStart(2, '0');
       const fechaClave = `${d.getFullYear()}-${mes}-${dia}`;
@@ -1255,10 +1317,35 @@ export class PosService {
         fecha: d.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric' }),
         total: mapaVentas.get(fechaClave) || 0,
       });
+
+      // Semana anterior
+      const dAnt = new Date(d);
+      dAnt.setDate(d.getDate() - 7);
+      const mesAnt = String(dAnt.getMonth() + 1).padStart(2, '0');
+      const diaAnt = String(dAnt.getDate()).padStart(2, '0');
+      const fechaClaveAnt = `${dAnt.getFullYear()}-${mesAnt}-${diaAnt}`;
+      
+      diasAnterior.push({
+        fecha: dAnt.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric' }),
+        total: mapaVentas.get(fechaClaveAnt) || 0,
+      });
     }
 
-    // Productos con stock 0
-    const sinStock = await this.productoRepo.count({ where: { activo: true, stockActual: 0 as any, sucursal: { idSucursal } } });
+    // Productos con stock <= 0 (incluyendo negativos) y stock bajo
+    const sinStock = await this.productoRepo.count({ 
+      where: { 
+        activo: true, 
+        stockActual: LessThanOrEqual(0), 
+        sucursal: { idSucursal } 
+      } 
+    });
+    const queryStockBajo = await this.productoRepo.createQueryBuilder('p')
+      .where('p.activo = 1')
+      .andWhere('p.id_sucursal = :idSucursal', { idSucursal })
+      .andWhere('p.stockActual > 0')
+      .andWhere('p.stockActual <= 5')
+      .getCount();
+    const stockBajo = queryStockBajo;
 
     // Devoluciones hoy
     const devolucionesHoy = await this.devolucionRepo
@@ -1276,10 +1363,15 @@ export class PosService {
       ticketPromedio,
       topProductos,
       graficaDias: dias,
+      graficaDiasAnterior: diasAnterior,
       sinStock,
+      stockBajo,
+      metodosPago,
+      ventasSinFacturar: ventasSinFacturarMes,
+      cotizacionesHoy,
+      caja: { abierta: cajaAbierta, saldo: cajaSaldo }
     };
   }
-
   // --- EMPRESAS ---
   async getEmpresas(idEmpresa?: number) {
     if (idEmpresa) {
