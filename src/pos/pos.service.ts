@@ -278,6 +278,8 @@ export class PosService {
     claveProdServ?: string;
     claveUnidad?: string;
     sumarStock?: number;
+    tipoArticulo?: string;
+    unidadMedida?: string;
   }, idSucursalUsuario?: number, rol?: string) {
     const productoExistente = await this.productoRepo.findOne({ where: { idProducto: id }, relations: { sucursal: true } });
     if (!productoExistente) throw new BadRequestException('Producto no encontrado');
@@ -307,6 +309,8 @@ export class PosService {
     const updates: any = {};
     if (data.nombre !== undefined) updates.nombre = data.nombre;
     if (data.codigoBarras !== undefined) updates.codigoBarras = data.codigoBarras;
+    if (data.tipoArticulo !== undefined) updates.tipoArticulo = data.tipoArticulo;
+    if (data.unidadMedida !== undefined) updates.unidadMedida = data.unidadMedida;
     if (data.precioUnitario !== undefined) updates.precioUnitario = data.precioUnitario;
     if (data.precioPublico !== undefined) updates.precioPublico = data.precioPublico;
     if (data.precioCompra !== undefined) updates.precioCompra = data.precioCompra;
@@ -1039,6 +1043,8 @@ export class PosService {
     imagenUrl?: string;
     claveProdServ?: string;
     claveUnidad?: string;
+    tipoArticulo?: string;
+    unidadMedida?: string;
   }) {
     if (data.idSucursal) {
       if (data.nombre) {
@@ -1069,6 +1075,8 @@ export class PosService {
       precioMayoreo: data.precioMayoreo || null,
       descuento: data.descuento || 0,
       minimoMayoreo: data.minimoMayoreo || 0,
+      tipoArticulo: data.tipoArticulo || 'Terminado',
+      unidadMedida: data.unidadMedida || 'Pza',
       iva: data.iva || 0,
       stockMinimo: data.stockMinimo || 0,
       stockActual: 0,
