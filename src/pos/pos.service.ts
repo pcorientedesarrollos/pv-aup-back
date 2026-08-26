@@ -209,8 +209,14 @@ export class PosService {
       if (search) {
         whereCondition = [
           { ...where, nombre: Like(`%${search}%`) },
-          { ...where, codigoBarras: Like(`%${search}%`) }
+          { ...where, codigoBarras: Like(`%${search}%`) },
+          { ...where, claveProdServ: Like(`%${search}%`) }
         ];
+        
+        // Si el término de búsqueda es numérico, buscar también por ID
+        if (!isNaN(Number(search))) {
+           whereCondition.push({ ...where, idProducto: Number(search) });
+        }
       }
 
     const [data, total] = await this.productoRepo.findAndCount({
@@ -225,23 +231,23 @@ export class PosService {
   }
   
   async buscarProductoPorCodigo(codigo: string, idSucursal?: number) {
-    const where: any = idSucursal ? { sucursal: { idSucursal } } : {};
-    // Buscar coincidencia exacta por código de barras o clave
-    where.codigoBarras = codigo;
-    
-    let prod = await this.productoRepo.findOne({
-      where,
-      relations: { categoria: true, sucursal: { empresa: true }, codigosAdicionales: true }
-    });
-    
-    if (!prod) {
-      delete where.codigoBarras;
-      where.clave = codigo;
-      prod = await this.productoRepo.findOne({
-        where,
-        relations: { categoria: true, sucursal: { empresa: true }, codigosAdicionales: true }
-      });
+    const query = this.productoRepo.createQueryBuilder('p')
+      .leftJoinAndSelect('p.categoria', 'categoria')
+      .leftJoinAndSelect('p.sucursal', 'sucursal')
+      .leftJoinAndSelect('sucursal.empresa', 'empresa')
+      .leftJoinAndSelect('p.codigosAdicionales', 'codigosAdicionales')
+      .where('(p.codigoBarras = :codigo OR p.claveProdServ = :codigo', { codigo });
+      
+    if (!isNaN(Number(codigo))) {
+      query.orWhere('p.idProducto = :idNum', { idNum: Number(codigo) });
     }
+    query.andWhere(')'); // close parenthesis
+
+    if (idSucursal) {
+      query.andWhere('p.idSucursal = :idSuc', { idSuc: idSucursal });
+    }
+
+    let prod = await query.getOne();
     
     // Y revisar en codigosAdicionales (aunque findOne con relacion a veces es difcil sin QueryBuilder)
     // Para simplificar:
@@ -315,14 +321,27 @@ export class PosService {
     if (data.precioPublico !== undefined) updates.precioPublico = data.precioPublico;
     if (data.precioCompra !== undefined) updates.precioCompra = data.precioCompra;
     if (data.utilidad !== undefined) updates.utilidad = data.utilidad;
-    if (data.aplicaDescuento !== undefined) updates.aplicaDescuento = data.aplicaDescuento;
+    if (data.aplicaDescuento !== undefined) {
+      updates.aplicaDescuento = data.aplicaDescuento;
+      // Si se desactiva el descuento, forzar descuento a 0 en BD
+      if (!data.aplicaDescuento) {
+        updates.descuento = 0;
+      }
+    }
     if (data.tipoDescuento !== undefined) updates.tipoDescuento = data.tipoDescuento;
-    if (data.aplicaIva !== undefined) updates.aplicaIva = data.aplicaIva;
+    if (data.aplicaIva !== undefined) {
+      updates.aplicaIva = data.aplicaIva;
+      // Si se desactiva el IVA, forzar iva a 0 en BD
+      if (!data.aplicaIva) {
+        updates.iva = 0;
+      }
+    }
     if (data.precioVenta !== undefined) updates.precioVenta = data.precioVenta;
     if (data.precioMayoreo !== undefined) updates.precioMayoreo = data.precioMayoreo;
-    if (data.descuento !== undefined) updates.descuento = data.descuento;
+    // Solo actualizar descuento/iva si no fueron ya seteados en el bloque aplica* de arriba
+    if (data.descuento !== undefined && updates.descuento === undefined) updates.descuento = data.descuento;
     if (data.minimoMayoreo !== undefined) updates.minimoMayoreo = data.minimoMayoreo;
-    if (data.iva !== undefined) updates.iva = data.iva;
+    if (data.iva !== undefined && updates.iva === undefined) updates.iva = data.iva;
     if (data.stockMinimo !== undefined) updates.stockMinimo = data.stockMinimo;
     if (data.imagenUrl !== undefined) updates.imagenUrl = data.imagenUrl;
     if (data.claveProdServ !== undefined) updates.claveProdServ = data.claveProdServ;
