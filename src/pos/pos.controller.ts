@@ -501,6 +501,14 @@ export class PosController {
     return this.posService.crearCotizacion(body);
   }
 
+  @Patch('cotizaciones/:id')
+  actualizarCotizacion(
+    @Param('id') id: string,
+    @Body() body: any
+  ) {
+    return this.posService.actualizarCotizacion(Number(id), body);
+  }
+
   @Patch('cotizaciones/:id/estatus')
   cambiarEstatusCotizacion(@Param('id') id: string, @Body('estatus') estatus: string, @CurrentUser() user: any) {
     return this.posService.cambiarEstatusCotizacion(Number(id), estatus, user?.idSucursal, user?.rol);

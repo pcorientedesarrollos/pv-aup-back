@@ -2555,6 +2555,82 @@ export class PosService {
     return this.getCotizacionById(savedCot.idCotizacion);
   }
 
+  async actualizarCotizacion(idCotizacion: number, payload: any) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const cotizacion = await queryRunner.manager.findOne(Cotizacion, {
+        where: { idCotizacion },
+        relations: { detalles: true }
+      });
+
+      if (!cotizacion) {
+        throw new NotFoundException('Cotizacin no encontrada.');
+      }
+
+      // Update basic fields
+      cotizacion.vigenciaDias = payload.vigenciaDias || cotizacion.vigenciaDias;
+      cotizacion.titulo = payload.titulo || null;
+      cotizacion.observaciones = payload.observaciones || null;
+      cotizacion.costoBase = payload.costoBase;
+      cotizacion.utilidadTotal = payload.utilidadTotal;
+      cotizacion.tipoCambio = payload.tipoCambio;
+      cotizacion.subtotal = payload.subtotal;
+      cotizacion.descuento = payload.descuento || 0;
+      cotizacion.totalIva = payload.totalIva;
+      cotizacion.total = payload.total;
+      
+      if (payload.idCliente) {
+        const cliente = await queryRunner.manager.findOne(Cliente, { where: { idCliente: payload.idCliente } });
+        if (cliente) cotizacion.cliente = cliente;
+      }
+      if (payload.nombreClienteTemporal) {
+        cotizacion.nombreClienteTemporal = payload.nombreClienteTemporal;
+      }
+
+      await queryRunner.manager.save(Cotizacion, cotizacion);
+
+      // Remove old detalles
+      await queryRunner.manager.delete(DetalleCotizacion, { cotizacion: { idCotizacion } });
+
+      // Create new detalles
+      for (const prod of payload.productos) {
+        const det = new DetalleCotizacion();
+        det.cotizacion = cotizacion;
+        if (prod.idProducto) {
+          const producto = await queryRunner.manager.findOne(Producto, { where: { idProducto: prod.idProducto } });
+          if (producto) det.producto = producto;
+        }
+        det.nombreConcepto = prod.nombreConcepto || null;
+        det.cantidad = prod.cantidad;
+        det.precioUnitario = prod.precioUnitario;
+        det.moneda = prod.moneda || 'MXN';
+        det.utilidadPorcentaje = prod.utilidadPorcentaje || 0;
+        det.utilidadValor = prod.utilidadValor || 0;
+        det.precioConUtilidad = prod.precioConUtilidad || prod.precioUnitario;
+        det.aplicaIva = prod.aplicaIva || false;
+        
+        await queryRunner.manager.save(DetalleCotizacion, det);
+      }
+
+      await queryRunner.commitTransaction();
+      
+      // Return fully loaded cotizacion
+      return this.cotizacionRepo.findOne({
+        where: { idCotizacion },
+        relations: ['cliente', 'sucursal', 'usuario', 'detalles', 'detalles.producto']
+      });
+
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   async cambiarEstatusCotizacion(idCotizacion: number, estatus: string, idSucursal?: number, rol?: string) {
     const cotizacion = await this.getCotizacionById(idCotizacion);
     if (idSucursal && rol !== 'Administrador' && rol !== 'Soporte') {
