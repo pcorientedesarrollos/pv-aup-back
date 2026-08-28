@@ -2561,7 +2561,7 @@ export class PosService {
     await queryRunner.startTransaction();
 
     try {
-      const cotizacion = await queryRunner.manager.findOne(Cotizacion, {
+      const cotizacion = await queryRunner.manager.findOne(PosCotizacion, {
         where: { idCotizacion },
         relations: { detalles: true }
       });
@@ -2583,24 +2583,24 @@ export class PosService {
       cotizacion.total = payload.total;
       
       if (payload.idCliente) {
-        const cliente = await queryRunner.manager.findOne(Cliente, { where: { idCliente: payload.idCliente } });
+        const cliente = await queryRunner.manager.findOne(PosCliente, { where: { idCliente: payload.idCliente } });
         if (cliente) cotizacion.cliente = cliente;
       }
       if (payload.nombreClienteTemporal) {
         cotizacion.nombreClienteTemporal = payload.nombreClienteTemporal;
       }
 
-      await queryRunner.manager.save(Cotizacion, cotizacion);
+      await queryRunner.manager.save(PosCotizacion, cotizacion);
 
       // Remove old detalles
-      await queryRunner.manager.delete(DetalleCotizacion, { cotizacion: { idCotizacion } });
+      await queryRunner.manager.delete(PosCotizacionDetalle, { cotizacion: { idCotizacion } });
 
       // Create new detalles
       for (const prod of payload.productos) {
-        const det = new DetalleCotizacion();
+        const det = new PosCotizacionDetalle();
         det.cotizacion = cotizacion;
         if (prod.idProducto) {
-          const producto = await queryRunner.manager.findOne(Producto, { where: { idProducto: prod.idProducto } });
+          const producto = await queryRunner.manager.findOne(PosProducto, { where: { idProducto: prod.idProducto } });
           if (producto) det.producto = producto;
         }
         det.nombreConcepto = prod.nombreConcepto || null;
@@ -2612,7 +2612,7 @@ export class PosService {
         det.precioConUtilidad = prod.precioConUtilidad || prod.precioUnitario;
         det.aplicaIva = prod.aplicaIva || false;
         
-        await queryRunner.manager.save(DetalleCotizacion, det);
+        await queryRunner.manager.save(PosCotizacionDetalle, det);
       }
 
       await queryRunner.commitTransaction();
@@ -2620,7 +2620,7 @@ export class PosService {
       // Return fully loaded cotizacion
       return this.cotizacionRepo.findOne({
         where: { idCotizacion },
-        relations: ['cliente', 'sucursal', 'usuario', 'detalles', 'detalles.producto']
+        relations: { cliente: true, sucursal: true, usuario: true, detalles: { producto: true } }
       });
 
     } catch (err) {
