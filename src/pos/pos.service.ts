@@ -2051,27 +2051,7 @@ export class PosService {
         
         direccionCompleta = partes.join(', ').replace(/\s+/g, ' ');
       }
-
-      // Guardar el cliente automáticamente si no existe y si tenemos el idSucursal
-      let idCliente: number | null = null;
-      if (rfc && nombre && idSucursal) {
-        let cliente = await this.clienteRepo.findOne({ where: { rfc, sucursal: { idSucursal } } });
-        if (!cliente) {
-          cliente = this.clienteRepo.create({
-            nombreCompleto: nombre,
-            rfc,
-            cp,
-            regimenFiscal,
-            direccion: direccionCompleta,
-            sucursal: { idSucursal },
-            activo: true
-          });
-          await this.clienteRepo.save(cliente);
-        }
-        idCliente = cliente.idCliente;
-      }
-
-      return { success: !!rfc, rfc, nombre, cp, regimenFiscal, direccion: direccionCompleta, idCliente, rawText: text.substring(0, 500) };
+        return { success: !!rfc, rfc, nombre, cp, regimenFiscal, direccion: direccionCompleta, rawText: text.substring(0, 500) };
     } catch (error) {
 //       void('Error parseando CSF:', error);
       return { success: false, error: 'No se pudo leer el PDF' };
