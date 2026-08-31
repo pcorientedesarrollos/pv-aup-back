@@ -2051,7 +2051,11 @@ export class PosService {
         
         direccionCompleta = partes.join(', ').replace(/\s+/g, ' ');
       }
-        return { success: !!rfc, rfc, nombre, cp, regimenFiscal, direccion: direccionCompleta, rawText: text.substring(0, 500) };
+        let clienteExistente: any = null;
+        if (rfc && idSucursal) {
+          clienteExistente = await this.clienteRepo.findOne({ where: { rfc, sucursal: { idSucursal } } });
+        }
+        return { success: !!rfc, rfc, nombre, cp, regimenFiscal, direccion: direccionCompleta, rawText: text.substring(0, 500), clienteExistente: !!clienteExistente, clienteData: clienteExistente };
     } catch (error) {
 //       void('Error parseando CSF:', error);
       return { success: false, error: 'No se pudo leer el PDF' };
