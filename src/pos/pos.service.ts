@@ -2052,8 +2052,17 @@ export class PosService {
         direccionCompleta = partes.join(', ').replace(/\s+/g, ' ');
       }
         let clienteExistente: any = null;
-        if (rfc && idSucursal) {
-          clienteExistente = await this.clienteRepo.findOne({ where: { rfc, sucursal: { idSucursal } } });
+        if (idSucursal && (rfc || nombre)) {
+          const conditions: any[] = [];
+          if (rfc && rfc.toUpperCase() !== 'XAXX010101000' && rfc.toUpperCase() !== 'XEXX010101000') {
+            conditions.push({ rfc, sucursal: { idSucursal } });
+          }
+          if (nombre) {
+            conditions.push({ nombreCompleto: nombre, sucursal: { idSucursal } });
+          }
+          if (conditions.length > 0) {
+            clienteExistente = await this.clienteRepo.findOne({ where: conditions });
+          }
         }
         return { success: !!rfc, rfc, nombre, cp, regimenFiscal, direccion: direccionCompleta, rawText: text.substring(0, 500), clienteExistente: !!clienteExistente, clienteData: clienteExistente };
     } catch (error) {
