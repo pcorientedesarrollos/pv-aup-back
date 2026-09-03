@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# Hook de Git: se ejecuta automáticamente antes de cada `git push`
+# Si las pruebas unitarias fallan, el push es CANCELADO.
+echo "🧪 Ejecutando pruebas unitarias antes de publicar..."
+cd "$(git rev-parse --show-toplevel)/pv-aup-back" && npm run test:ci

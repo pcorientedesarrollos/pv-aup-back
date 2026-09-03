@@ -1,3 +1,4 @@
+import { calcularCostoPromedioPonderado } from './pos-calculos.helper';
 import axios from 'axios';
 import AdmZip = require('adm-zip');
 import { Injectable, BadRequestException, UnauthorizedException, NotFoundException, ForbiddenException } from '@nestjs/common';
@@ -923,23 +924,33 @@ export class PosService {
 
       await queryRunner.manager.save(movimiento);
 
+      // Calcular el nuevo costo promedio ponderado automáticamente
+      if (payload.costoUnitario !== undefined && payload.costoUnitario !== null) {
+        const stockPrevio = Number(producto.stockActual);
+        const costoPrevio = Number(producto.precioCompra) || 0;
+        
+        producto.precioCompra = calcularCostoPromedioPonderado(
+          stockPrevio, 
+          costoPrevio, 
+          cantidadNumber, 
+          payload.costoUnitario
+        );
+
+        // Recalcular precios de venta manteniendo el % de utilidad
+        const utilidad = Number(producto.utilidad) || 0;
+        const precioPublico = producto.precioCompra * (1 + (utilidad / 100));
+        producto.precioUnitario = precioPublico;
+        producto.precioPublico = precioPublico;
+        
+        const aplicaIva = producto.aplicaIva ?? false;
+        const ivaRate = Number(producto.iva) || 0;
+        const baseIva = precioPublico - (Number(producto.descuento) || 0);
+        const ivaCalc = aplicaIva ? (baseIva * (ivaRate / 100)) : 0;
+        producto.precioVenta = baseIva + ivaCalc;
+      }
+
       // Actualizar el stock
       producto.stockActual = Number(producto.stockActual) + cantidadNumber;
-      
-      // Actualizar el costo si se solicitó
-      if (payload.actualizarCosto && payload.costoUnitario) {
-          producto.precioCompra = payload.costoUnitario;
-          const utilidad = Number(producto.utilidad) || 0;
-          const precioPublico = producto.precioCompra * (1 + (utilidad / 100));
-          producto.precioUnitario = precioPublico;
-          producto.precioPublico = precioPublico;
-          
-          const aplicaIva = producto.aplicaIva ?? false;
-          const ivaRate = Number(producto.iva) || 0;
-          const baseIva = precioPublico - (Number(producto.descuento) || 0);
-          const ivaCalc = aplicaIva ? (baseIva * (ivaRate / 100)) : 0;
-          producto.precioVenta = baseIva + ivaCalc;
-        }
       
       await queryRunner.manager.save(producto);
 
@@ -1987,7 +1998,23 @@ export class PosService {
   async parseCsf(buffer: Buffer, idSucursal?: number) {
     try {
       const pdfParse = require('pdf-parse');
-      const data = await pdfParse(buffer);
+      const render_page = function(pageData: any) {
+        const render_options = { normalizeWhitespace: true, disableCombineTextItems: false };
+        return pageData.getTextContent(render_options).then(function(textContent: any) {
+            let pageText = '';
+            let lastY = -1;
+            for (let item of textContent.items) {
+                if (lastY == item.transform[5] || lastY === -1) {
+                    pageText += ' ' + item.str;
+                } else {
+                    pageText += '\n' + item.str;
+                }
+                lastY = item.transform[5];
+            }
+            return pageText;
+        });
+      };
+      const data = await pdfParse(buffer, { pagerender: render_page });
       const text = data.text;
 
       // Extraer RFC (Patrón estándar de RFC Mexicano)
@@ -2064,7 +2091,19 @@ export class PosService {
             clienteExistente = await this.clienteRepo.findOne({ where: conditions });
           }
         }
-        return { success: !!rfc, rfc, nombre, cp, regimenFiscal, direccion: direccionCompleta, rawText: text.substring(0, 500), clienteExistente: !!clienteExistente, clienteData: clienteExistente };
+        const sanitizar = (str: string) => str ? str.replace(/\s+/g, ' ').trim() : '';
+
+        return { 
+          success: !!rfc, 
+          rfc: sanitizar(rfc), 
+          nombre: sanitizar(nombre), 
+          cp: sanitizar(cp), 
+          regimenFiscal: sanitizar(regimenFiscal), 
+          direccion: sanitizar(direccionCompleta), 
+          rawText: text.substring(0, 500), 
+          clienteExistente: !!clienteExistente, 
+          clienteData: clienteExistente 
+        };
     } catch (error) {
 //       void('Error parseando CSF:', error);
       return { success: false, error: 'No se pudo leer el PDF' };
@@ -2242,9 +2281,18 @@ export class PosService {
         // Sumar stock al producto
         const pCompra = await queryRunner.manager.findOne(PosProducto, { where: { idProducto: item.idProducto } });
         if (pCompra) {
-          pCompra.stockActual = Number(pCompra.stockActual) + Number(item.cantidad);
-          if (item.actualizarCosto) {
-              pCompra.precioCompra = item.precioCosto;
+          if (item.precioCosto !== undefined && item.precioCosto !== null) {
+              const stockPrevio = Number(pCompra.stockActual);
+              const costoPrevio = Number(pCompra.precioCompra) || 0;
+              const cantidadEntrante = Number(item.cantidad);
+
+              pCompra.precioCompra = calcularCostoPromedioPonderado(
+                stockPrevio,
+                costoPrevio,
+                cantidadEntrante,
+                item.precioCosto
+              );
+
               const utilidad = Number(pCompra.utilidad) || 0;
               const precioPublico = pCompra.precioCompra * (1 + (utilidad / 100));
               pCompra.precioUnitario = precioPublico;
@@ -2256,6 +2304,8 @@ export class PosService {
               const ivaCalc = aplicaIva ? (baseIva * (ivaRate / 100)) : 0;
               pCompra.precioVenta = baseIva + ivaCalc;
             }
+          
+          pCompra.stockActual = Number(pCompra.stockActual) + Number(item.cantidad);
           await queryRunner.manager.save(PosProducto, pCompra);
         }
 
