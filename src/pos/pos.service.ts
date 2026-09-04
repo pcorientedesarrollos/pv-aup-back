@@ -761,17 +761,63 @@ export class PosService {
   }
 
   // --- Inventario Unificado ---
-  async getMovimientosInventario(idSucursal?: number) {
+  async getMovimientosInventario(idSucursal?: number, filtros?: { fechaInicio?: string, fechaFin?: string, idProducto?: number }) {
+    let baseWhere: any = {};
+    if (filtros?.idProducto) {
+      baseWhere.producto = { idProducto: filtros.idProducto };
+    }
+
     const where = idSucursal ? [
-      { sucursal: { idSucursal } },
-      { usuario: { sucursal: { idSucursal } } }
-    ] : {};
+      { sucursal: { idSucursal }, ...baseWhere },
+      { usuario: { sucursal: { idSucursal } }, ...baseWhere }
+    ] : Object.keys(baseWhere).length > 0 ? [baseWhere] : {};
+
+    // Obtener en orden cronológico ascendente (para cálculo de saldo)
     const movimientos = await this.movimientoRepo.find({
       where,
       relations: { producto: { categoria: true }, usuario: { sucursal: { empresa: true } } },
-      order: { fecha: 'DESC' }
+      order: { fecha: 'ASC', idMovimiento: 'ASC' }
     });
-    return movimientos;
+
+    let saldo = 0;
+    let tieneFiltroProducto = !!filtros?.idProducto;
+
+    const procesados = movimientos.map(mov => {
+      const tipo = (mov.tipoMovimiento || '').toLowerCase();
+      const cant = Number(mov.cantidad);
+      
+      let factor = 0;
+      if (tipo.includes('entrada') || tipo.includes('compra') || tipo.includes('ajuste (entrada)') || tipo === 'traspaso_in' || tipo === 'fraccionamiento_in' || tipo === 'produccion_in' || tipo === 'devolución (stock)') {
+        factor = 1;
+      } else if (tipo.includes('salida') || tipo.includes('venta') || tipo.includes('merma') || tipo.includes('ajuste (salida)') || tipo === 'traspaso_out' || tipo === 'fraccionamiento_out' || tipo === 'produccion_out') {
+        if (!tipo.includes('devolución (merma)')) { // Devolución (Merma) no regresa al stock
+          factor = -1;
+        }
+      }
+
+      saldo += (cant * factor);
+
+      return {
+        ...mov,
+        existenciaDespues: tieneFiltroProducto ? saldo : null
+      };
+    });
+
+    // Ahora filtramos por fechas si vienen en los parámetros (así el saldo ya está arrastrado correctamente desde el inicio de los tiempos)
+    let filtrados = procesados;
+    if (filtros?.fechaInicio) {
+      const fi = new Date(filtros.fechaInicio);
+      fi.setHours(0, 0, 0, 0);
+      filtrados = filtrados.filter(m => new Date(m.fecha) >= fi);
+    }
+    if (filtros?.fechaFin) {
+      const ff = new Date(filtros.fechaFin);
+      ff.setHours(23, 59, 59, 999);
+      filtrados = filtrados.filter(m => new Date(m.fecha) <= ff);
+    }
+
+    // Invertimos el orden final para que en la interfaz aparezca el más reciente primero
+    return filtrados.reverse();
   }
 
   async registrarEntradasInventarioMasivo(entradas: any[], idUsuario: number, idSucursal: number) {

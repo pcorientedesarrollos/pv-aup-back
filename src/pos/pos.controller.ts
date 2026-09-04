@@ -256,8 +256,20 @@ export class PosController {
 
   // --- Inventario Unificado ---
   @Get('inventario')
-  getMovimientosInventario(@Headers("x-sucursal-id") idSucursal: string) {
-    return this.posService.getMovimientosInventario(Number(idSucursal));
+  getMovimientosInventario(
+    @Headers("x-sucursal-id") idSucursal: string,
+    @Query('fechaInicio') fechaInicio?: string,
+    @Query('fechaFin') fechaFin?: string,
+    @Query('idProducto') idProducto?: string
+  ) {
+    return this.posService.getMovimientosInventario(
+      Number(idSucursal),
+      {
+        fechaInicio,
+        fechaFin,
+        idProducto: idProducto ? Number(idProducto) : undefined
+      }
+    );
   }
 
   @Post('inventario/entradas')
