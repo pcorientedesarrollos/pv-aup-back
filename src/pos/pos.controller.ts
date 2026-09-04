@@ -284,6 +284,12 @@ export class PosController {
     return this.posService.registrarEntradasInventarioMasivo(body.entradas, idUsuario, Number(idSucursal));
   }
 
+  @Post('inventario/movimiento/:id/reversar')
+  reversarMovimiento(@Param('id') id: string, @Headers("x-usuario-id") idUsuarioHeader: string, @Headers("x-sucursal-id") idSucursal: string) {
+    const idUsuario = idUsuarioHeader ? Number(idUsuarioHeader) : 1;
+    return this.posService.reversarMovimiento(Number(id), idUsuario, idSucursal ? Number(idSucursal) : undefined);
+  }
+
   @Post('inventario/importar-xml')
   @UseInterceptors(FileInterceptor('xml'))
   importarXml(@Headers("x-sucursal-id") idSucursal: string, @UploadedFile() file: Express.Multer.File) {

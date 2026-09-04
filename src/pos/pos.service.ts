@@ -833,6 +833,75 @@ export class PosService {
     return { procesados: entradas.length, resultados };
   }
 
+  async reversarMovimiento(idMovimiento: number, idUsuario: number, idSucursal?: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const original = await queryRunner.manager.findOne(this.movimientoRepo.target, {
+        where: { idMovimiento },
+        relations: { producto: true, sucursal: true }
+      }) as any;
+
+      if (!original) {
+        throw new BadRequestException('Movimiento no encontrado.');
+      }
+      if ((original.referencia || '').toUpperCase().includes('REVERSO DE') || (original.referencia || '').toUpperCase().includes('(REVERSADO)')) {
+        throw new BadRequestException('Este movimiento ya fue reversado o es una reversión.');
+      }
+
+      const tipoOriginal = (original.tipoMovimiento || '').toLowerCase();
+      let factorOriginal = 0;
+      if (tipoOriginal.includes('entrada') || tipoOriginal.includes('compra') || tipoOriginal.includes('ajuste (entrada)') || tipoOriginal === 'traspaso_in' || tipoOriginal === 'fraccionamiento_in' || tipoOriginal === 'produccion_in' || tipoOriginal === 'devolución (stock)') {
+        factorOriginal = 1;
+      } else if (tipoOriginal.includes('salida') || tipoOriginal.includes('venta') || tipoOriginal.includes('merma') || tipoOriginal.includes('ajuste (salida)') || tipoOriginal === 'traspaso_out' || tipoOriginal === 'fraccionamiento_out' || tipoOriginal === 'produccion_out') {
+        if (!tipoOriginal.includes('devolución (merma)')) {
+          factorOriginal = -1;
+        }
+      }
+
+      // Si el movimiento original afectó el stock, lo reversamos
+      if (factorOriginal !== 0) {
+        const producto = await queryRunner.manager.findOne(this.productoRepo.target, {
+          where: { idProducto: original.producto.idProducto }
+        }) as any;
+
+        if (producto) {
+          // Si el original sumó, restamos. Si restó, sumamos.
+          const ajuste = factorOriginal === 1 ? -Number(original.cantidad) : Number(original.cantidad);
+          producto.stockActual = Number(producto.stockActual) + ajuste;
+          await queryRunner.manager.save(producto);
+        }
+      }
+
+      // Marcar original como reversado
+      original.referencia = original.referencia ? original.referencia + ' (REVERSADO)' : '(REVERSADO)';
+      await queryRunner.manager.save(original);
+
+      // Crear el movimiento inverso
+      const inverso = this.movimientoRepo.create({
+        producto: { idProducto: original.producto.idProducto },
+        usuario: { idUsuario },
+        sucursal: idSucursal ? { idSucursal } : (original.sucursal ? { idSucursal: original.sucursal.idSucursal } : undefined),
+        tipoMovimiento: `Reverso de ${original.tipoMovimiento}`,
+        cantidad: original.cantidad,
+        costoUnitario: original.costoUnitario,
+        referencia: `Anulación del movimiento #${original.idMovimiento}`
+      });
+
+      await queryRunner.manager.save(inverso);
+
+      await queryRunner.commitTransaction();
+      return { success: true, message: 'Movimiento reversado exitosamente' };
+    } catch (error: any) {
+      await queryRunner.rollbackTransaction();
+      throw new BadRequestException('Error al reversar el movimiento: ' + error.message);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   async parsearXmlFactura(xmlContent: string, idSucursal: number) {
     const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '@_' });
     let jsonObj;
