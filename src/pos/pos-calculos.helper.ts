@@ -100,6 +100,11 @@ export function calcularCostoPromedioPonderado(
   cantEntrante: number,
   costoEntrante: number
 ): number {
+  stockActual = Number(stockActual) || 0;
+  costoActual = Number(costoActual) || 0;
+  cantEntrante = Number(cantEntrante) || 0;
+  costoEntrante = Number(costoEntrante) || 0;
+
   if (stockActual <= 0) {
     // Si había sobreventa o inventario vacío, las piezas reales provienen de esta compra.
     return Number(costoEntrante.toFixed(4));

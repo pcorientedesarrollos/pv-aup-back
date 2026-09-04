@@ -611,6 +611,11 @@ export class PosController {
     return this.posService.getCompra(Number(id));
   }
 
+  @Patch('compras/:id/administrativo')
+  actualizarDatosAdministrativosCompra(@Param('id') id: string, @Body() body: any) {
+    return this.posService.actualizarDatosAdministrativosCompra(Number(id), body);
+  }
+
   @Post('compras')
   crearCompra(@Body() body: any, @Headers('x-sucursal-id') idSucursal: string, @Headers('x-usuario-id') idUsuario: string) {
     return this.posService.crearCompra(body, idSucursal ? Number(idSucursal) : undefined, idUsuario ? Number(idUsuario) : undefined);

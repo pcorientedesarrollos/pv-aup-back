@@ -933,7 +933,7 @@ export class PosService {
           stockPrevio, 
           costoPrevio, 
           cantidadNumber, 
-          payload.costoUnitario
+          Number(payload.costoUnitario)
         );
 
         // Recalcular precios de venta manteniendo el % de utilidad
@@ -2246,6 +2246,24 @@ export class PosService {
     return compra;
   }
 
+  async actualizarDatosAdministrativosCompra(id: number, payload: any) {
+    const compra = await this.compraRepo.findOneBy({ idCompra: id });
+    if (!compra) throw new NotFoundException('Compra no encontrada');
+
+    if (payload.idProveedor !== undefined) {
+      compra.proveedor = payload.idProveedor ? { idProveedor: payload.idProveedor } as any : null;
+    }
+    if (payload.folioFacturaProveedor !== undefined) {
+      compra.folioFacturaProveedor = payload.folioFacturaProveedor;
+    }
+    if (payload.notas !== undefined) {
+      compra.notas = payload.notas;
+    }
+
+    await this.compraRepo.save(compra);
+    return { success: true, message: 'Datos administrativos de la compra actualizados', compra };
+  }
+
   async crearCompra(payload: any, idSucursal?: number, idUsuario?: number) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -2290,7 +2308,7 @@ export class PosService {
                 stockPrevio,
                 costoPrevio,
                 cantidadEntrante,
-                item.precioCosto
+                Number(item.precioCosto)
               );
 
               const utilidad = Number(pCompra.utilidad) || 0;
