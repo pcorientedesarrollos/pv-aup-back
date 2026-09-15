@@ -108,7 +108,7 @@ export class PosService {
 
     if (payload.usuario && payload.usuario.nombreUsuario) {
       if (!payload.usuario.contrasena || payload.usuario.contrasena.length < 6) {
-        throw new BadRequestException('La contraseÃƒÂ±a del usuario administrador debe tener al menos 6 caracteres');
+        throw new BadRequestException('La contraseÃƒÆ’Ã‚Â±a del usuario administrador debe tener al menos 6 caracteres');
       }
       const nuevoUsuario = this.usuarioRepo.create({
         sucursal: { idSucursal: saved.idSucursal },
@@ -149,7 +149,7 @@ export class PosService {
     });
     
     if (!user) {
-      throw new UnauthorizedException('Credenciales invÃƒÂ¡lidas');
+      throw new UnauthorizedException('Credenciales invÃƒÆ’Ã‚Â¡lidas');
     }
 
     // Compatibilidad para passwords legacy en texto plano
@@ -168,7 +168,7 @@ export class PosService {
     }
 
     if (!isMatch) {
-      throw new UnauthorizedException('Credenciales invÃƒÂ¡lidas');
+      throw new UnauthorizedException('Credenciales invÃƒÆ’Ã‚Â¡lidas');
     }
     const jwtPayload = { username: user.nombreUsuario, sub: user.idUsuario, rol: user.rol, sucursal: user.sucursal?.idSucursal, idEmpresa: user.sucursal?.empresa?.idEmpresa };
     const empresa = user.sucursal?.empresa;
@@ -216,7 +216,7 @@ export class PosService {
           { ...where, claveProdServ: Like(`%${search}%`) }
         ];
         
-        // Si el tÃƒÂ©rmino de bÃƒÂºsqueda es numÃƒÂ©rico, buscar tambiÃƒÂ©n por ID
+        // Si el tÃƒÆ’Ã‚Â©rmino de bÃƒÆ’Ã‚Âºsqueda es numÃƒÆ’Ã‚Â©rico, buscar tambiÃƒÆ’Ã‚Â©n por ID
         if (!isNaN(Number(search))) {
            whereCondition.push({ ...where, idProducto: Number(search) });
         }
@@ -311,7 +311,7 @@ export class PosService {
         const dupCodigo = await this.productoRepo.findOne({
           where: { sucursal: { idSucursal }, codigoBarras: data.codigoBarras, idProducto: Not(id) }
         });
-        if (dupCodigo) throw new BadRequestException(`Ya existe otro producto con el cÃƒÂ³digo de barras "${data.codigoBarras}" en esta sucursal.`);
+        if (dupCodigo) throw new BadRequestException(`Ya existe otro producto con el cÃƒÆ’Ã‚Â³digo de barras "${data.codigoBarras}" en esta sucursal.`);
       }
     }
 
@@ -360,7 +360,7 @@ export class PosService {
     return this.productoRepo.findOne({ where: { idProducto: id }, relations: { categoria: true, codigosAdicionales: true } });
   }
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ CODIGOS ADICIONALES Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ CODIGOS ADICIONALES ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
   async agregarCodigoAdicional(idProducto: number, codigoBarras: string) {
     const p = await this.productoRepo.findOne({ where: { idProducto }, relations: { sucursal: true } });
     if (!p) throw new BadRequestException('Producto no encontrado');
@@ -369,14 +369,14 @@ export class PosService {
     if (p.sucursal) {
       // Is it main code of another product?
       const mainDup = await this.productoRepo.findOne({ where: { sucursal: { idSucursal: p.sucursal.idSucursal }, codigoBarras } });
-      if (mainDup) throw new BadRequestException(`El cÃƒÂ³digo "${codigoBarras}" ya es el principal de otro producto en esta sucursal.`);
+      if (mainDup) throw new BadRequestException(`El cÃƒÆ’Ã‚Â³digo "${codigoBarras}" ya es el principal de otro producto en esta sucursal.`);
       
       // Is it alias of another product?
       const aliasDup = await this.productoCodigoRepo.findOne({ 
         where: { codigoBarras, producto: { sucursal: { idSucursal: p.sucursal.idSucursal } } },
         relations: { producto: true }
       });
-      if (aliasDup) throw new BadRequestException(`El cÃƒÂ³digo "${codigoBarras}" ya estÃƒÂ¡ asignado a otro producto en esta sucursal.`);
+      if (aliasDup) throw new BadRequestException(`El cÃƒÆ’Ã‚Â³digo "${codigoBarras}" ya estÃƒÆ’Ã‚Â¡ asignado a otro producto en esta sucursal.`);
     }
 
     const nuevo = this.productoCodigoRepo.create({ codigoBarras, producto: { idProducto } });
@@ -589,24 +589,36 @@ export class PosService {
 
     if (!corte) throw new BadRequestException('Corte no encontrado');
 
-    const ventas = await this.ventaRepo.find({
-      where: { corte: { idCorte } }
-    });
+    const sumasVentas = await this.ventaRepo.createQueryBuilder('venta')
+      .select([
+        "SUM(CASE WHEN venta.estatus = 'Completada' THEN venta.efectivo ELSE 0 END) AS totalEfectivo",
+        "SUM(CASE WHEN venta.estatus = 'Completada' THEN venta.tarjeta ELSE 0 END) AS totalTarjeta",
+        "SUM(CASE WHEN venta.estatus = 'Completada' THEN venta.transferencia ELSE 0 END) AS totalTransferencia",
+        "SUM(CASE WHEN venta.estatus = 'Cancelada' THEN venta.total_pagado ELSE 0 END) AS totalCancelado",
+        "COUNT(venta.id_venta) AS numeroVentas"
+      ])
+      .where("venta.id_corte = :idCorte", { idCorte })
+      .getRawOne();
+
+    const sumasGastos = await this.gastoRepo.createQueryBuilder('gasto')
+      .select("SUM(gasto.monto)", "totalGastos")
+      .where("gasto.id_corte = :idCorte", { idCorte })
+      .getRawOne();
 
     const gastos = await this.gastoRepo.find({
-      where: { corte: { idCorte } }
+      where: { corte: { idCorte } },
+      order: { fecha: 'DESC' }, take: 200
     });
 
-    const ventasCompletadas = ventas.filter(v => v.estatus === 'Completada');
-    const ventasCanceladas = ventas.filter(v => v.estatus === 'Cancelada');
-
-    const totalEfectivo = ventasCompletadas.reduce((acc, v) => acc + Number(v.efectivo), 0);
-    const totalTarjeta = ventasCompletadas.reduce((acc, v) => acc + Number(v.tarjeta), 0);
-    const totalTransferencia = ventasCompletadas.reduce((acc, v) => acc + Number(v.transferencia), 0);
-    const totalCancelado = ventasCanceladas.reduce((acc, v) => acc + Number(v.totalPagado), 0);
-    const totalGastos = gastos.reduce((acc, g) => acc + Number(g.monto), 0);
+    const totalEfectivo = Number(sumasVentas?.totalefectivo || sumasVentas?.totalEfectivo || 0);
+    const totalTarjeta = Number(sumasVentas?.totaltarjeta || sumasVentas?.totalTarjeta || 0);
+    const totalTransferencia = Number(sumasVentas?.totaltransferencia || sumasVentas?.totalTransferencia || 0);
+    const totalCancelado = Number(sumasVentas?.totalcancelado || sumasVentas?.totalCancelado || 0);
+    const totalGastos = Number(sumasGastos?.totalgastos || sumasGastos?.totalGastos || 0);
 
     const esperado = Number(corte.fondoInicial) + totalEfectivo + totalTarjeta + totalTransferencia - totalGastos;
+
+    (corte as any).ventas = new Array(Number(sumasVentas?.numeroventas || sumasVentas?.numeroVentas || 0));
 
     return {
       corte,
@@ -634,7 +646,7 @@ export class PosService {
 
     return {
       success: true,
-      mensaje: 'Corte realizado con ÃƒÂ©xito',
+      mensaje: 'Corte realizado con ÃƒÆ’Ã‚Â©xito',
       diferencia: efectivoEscaner - corteData.resumen.totalIngresos
     };
   }
@@ -648,7 +660,7 @@ export class PosService {
         usuario: { rol: Not('Soporte') }
       },
       relations: { usuario: { sucursal: { empresa: true } } },
-      order: { fechaApertura: 'DESC' }
+      order: { fechaApertura: 'DESC' }, take: 200
     });
   }
 
@@ -788,7 +800,7 @@ export class PosService {
       { usuario: { sucursal: { idSucursal } }, ...baseWhere }
     ] : Object.keys(baseWhere).length > 0 ? [baseWhere] : {};
 
-    // Obtener en orden cronolÃƒÂ³gico ascendente (para cÃƒÂ¡lculo de saldo)
+    // Obtener en orden cronolÃƒÆ’Ã‚Â³gico ascendente (para cÃƒÆ’Ã‚Â¡lculo de saldo)
     const movimientos = await this.movimientoRepo.find({
       where,
       relations: { producto: { categoria: true }, usuario: { sucursal: { empresa: true } } },
@@ -803,10 +815,10 @@ export class PosService {
       const cant = Number(mov.cantidad);
       
       let factor = 0;
-      if (tipo.includes('entrada') || tipo.includes('compra') || tipo.includes('ajuste (entrada)') || tipo === 'traspaso_in' || tipo === 'fraccionamiento_in' || tipo === 'produccion_in' || tipo === 'devoluciÃƒÂ³n (stock)') {
+      if (tipo.includes('entrada') || tipo.includes('compra') || tipo.includes('ajuste (entrada)') || tipo === 'traspaso_in' || tipo === 'fraccionamiento_in' || tipo === 'produccion_in' || tipo === 'devoluciÃƒÆ’Ã‚Â³n (stock)') {
         factor = 1;
       } else if (tipo.includes('salida') || tipo.includes('venta') || tipo.includes('merma') || tipo.includes('ajuste (salida)') || tipo === 'traspaso_out' || tipo === 'fraccionamiento_out' || tipo === 'produccion_out') {
-        if (!tipo.includes('devoluciÃƒÂ³n (merma)')) { // DevoluciÃƒÂ³n (Merma) no regresa al stock
+        if (!tipo.includes('devoluciÃƒÆ’Ã‚Â³n (merma)')) { // DevoluciÃƒÆ’Ã‚Â³n (Merma) no regresa al stock
           factor = -1;
         }
       }
@@ -819,7 +831,7 @@ export class PosService {
       };
     });
 
-    // Ahora filtramos por fechas si vienen en los parÃƒÂ¡metros (asÃƒÂ­ el saldo ya estÃƒÂ¡ arrastrado correctamente desde el inicio de los tiempos)
+    // Ahora filtramos por fechas si vienen en los parÃƒÆ’Ã‚Â¡metros (asÃƒÆ’Ã‚Â­ el saldo ya estÃƒÆ’Ã‚Â¡ arrastrado correctamente desde el inicio de los tiempos)
     let filtrados = procesados;
     if (filtros?.fechaInicio) {
       const fi = new Date(filtros.fechaInicio);
@@ -832,7 +844,7 @@ export class PosService {
       filtrados = filtrados.filter(m => new Date(m.fecha) <= ff);
     }
 
-    // Invertimos el orden final para que en la interfaz aparezca el mÃƒÂ¡s reciente primero
+    // Invertimos el orden final para que en la interfaz aparezca el mÃƒÆ’Ã‚Â¡s reciente primero
     return filtrados.reverse();
   }
 
@@ -864,27 +876,27 @@ export class PosService {
         throw new BadRequestException('Movimiento no encontrado.');
       }
       if ((original.referencia || '').toUpperCase().includes('REVERSO DE') || (original.referencia || '').toUpperCase().includes('(REVERSADO)')) {
-        throw new BadRequestException('Este movimiento ya fue reversado o es una reversiÃƒÂ³n.');
+        throw new BadRequestException('Este movimiento ya fue reversado o es una reversiÃƒÆ’Ã‚Â³n.');
       }
 
       const tipoOriginal = (original.tipoMovimiento || '').toLowerCase();
       let factorOriginal = 0;
-      if (tipoOriginal.includes('entrada') || tipoOriginal.includes('compra') || tipoOriginal.includes('ajuste (entrada)') || tipoOriginal === 'traspaso_in' || tipoOriginal === 'fraccionamiento_in' || tipoOriginal === 'produccion_in' || tipoOriginal === 'devoluciÃƒÂ³n (stock)') {
+      if (tipoOriginal.includes('entrada') || tipoOriginal.includes('compra') || tipoOriginal.includes('ajuste (entrada)') || tipoOriginal === 'traspaso_in' || tipoOriginal === 'fraccionamiento_in' || tipoOriginal === 'produccion_in' || tipoOriginal === 'devoluciÃƒÆ’Ã‚Â³n (stock)') {
         factorOriginal = 1;
       } else if (tipoOriginal.includes('salida') || tipoOriginal.includes('venta') || tipoOriginal.includes('merma') || tipoOriginal.includes('ajuste (salida)') || tipoOriginal === 'traspaso_out' || tipoOriginal === 'fraccionamiento_out' || tipoOriginal === 'produccion_out') {
-        if (!tipoOriginal.includes('devoluciÃƒÂ³n (merma)')) {
+        if (!tipoOriginal.includes('devoluciÃƒÆ’Ã‚Â³n (merma)')) {
           factorOriginal = -1;
         }
       }
 
-      // Si el movimiento original afectÃƒÂ³ el stock, lo reversamos
+      // Si el movimiento original afectÃƒÆ’Ã‚Â³ el stock, lo reversamos
       if (factorOriginal !== 0) {
         const producto = await queryRunner.manager.findOne(this.productoRepo.target, {
           where: { idProducto: original.producto.idProducto }
         }) as any;
 
         if (producto) {
-          // Si el original sumÃƒÂ³, restamos. Si restÃƒÂ³, sumamos.
+          // Si el original sumÃƒÆ’Ã‚Â³, restamos. Si restÃƒÆ’Ã‚Â³, sumamos.
           const ajuste = factorOriginal === 1 ? -Number(original.cantidad) : Number(original.cantidad);
           producto.stockActual = Number(producto.stockActual) + ajuste;
           await queryRunner.manager.save(producto);
@@ -903,7 +915,7 @@ export class PosService {
         tipoMovimiento: `Reverso de ${original.tipoMovimiento}`,
         cantidad: original.cantidad,
         costoUnitario: original.costoUnitario,
-        referencia: `AnulaciÃƒÂ³n del movimiento #${original.idMovimiento}`
+        referencia: `AnulaciÃƒÆ’Ã‚Â³n del movimiento #${original.idMovimiento}`
       });
 
       await queryRunner.manager.save(inverso);
@@ -924,24 +936,24 @@ export class PosService {
     try {
       jsonObj = parser.parse(xmlContent);
     } catch (e) {
-      throw new BadRequestException('El archivo no es un XML vÃƒÂ¡lido');
+      throw new BadRequestException('El archivo no es un XML vÃƒÆ’Ã‚Â¡lido');
     }
 
     const comprobante = jsonObj['cfdi:Comprobante'];
     if (!comprobante) {
-      // MOCK DATA PARA PRUEBAS CUANDO EL XML NO ES UN CFDI VÃƒÂLIDO
+      // MOCK DATA PARA PRUEBAS CUANDO EL XML NO ES UN CFDI VÃƒÆ’Ã‚ÂLIDO
       return {
-        emisor: { rfc: 'TEST010203XXX', nombre: 'PROVEEDOR DE PRUEBA (XML GENÃƒâ€°RICO)' },
+        emisor: { rfc: 'TEST010203XXX', nombre: 'PROVEEDOR DE PRUEBA (XML GENÃƒÆ’Ã¢â‚¬Â°RICO)' },
         conceptos: [
           {
-            conceptoXml: 'Producto ExtraÃƒÂ­do de Prueba 1',
+            conceptoXml: 'Producto ExtraÃƒÆ’Ã‚Â­do de Prueba 1',
             noIdentificacion: 'TEST-123',
             cantidad: 5,
             costoUnitario: 100.50,
             productoEncontrado: null
           },
           {
-            conceptoXml: 'Producto ExtraÃƒÂ­do de Prueba 2',
+            conceptoXml: 'Producto ExtraÃƒÆ’Ã‚Â­do de Prueba 2',
             noIdentificacion: 'TEST-456',
             cantidad: 10,
             costoUnitario: 50.00,
@@ -1055,7 +1067,7 @@ export class PosService {
 
       await queryRunner.manager.save(movimiento);
 
-      // Calcular el nuevo costo promedio ponderado automÃƒÂ¡ticamente
+      // Calcular el nuevo costo promedio ponderado automÃƒÆ’Ã‚Â¡ticamente
       const doUpdate = payload.actualizarCosto !== false;
       if (doUpdate && payload.costoUnitario !== undefined && payload.costoUnitario !== null) {
         const stockPrevio = Number(producto.stockActual);
@@ -1222,7 +1234,7 @@ export class PosService {
         const dupCodigo = await this.productoRepo.findOne({
           where: { sucursal: { idSucursal: data.idSucursal }, codigoBarras: data.codigoBarras }
         });
-        if (dupCodigo) throw new BadRequestException(`Ya existe otro producto con el cÃƒÂ³digo de barras "${data.codigoBarras}" en esta sucursal.`);
+        if (dupCodigo) throw new BadRequestException(`Ya existe otro producto con el cÃƒÆ’Ã‚Â³digo de barras "${data.codigoBarras}" en esta sucursal.`);
       }
     }
 
@@ -1260,7 +1272,7 @@ export class PosService {
     return this.productoRepo.save(producto);
   }
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ AJUSTE MANUAL DE STOCK Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ AJUSTE MANUAL DE STOCK ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
   async ajustarStock(idProducto: number, stockReal: number, motivo: string, idUsuario: number, idSucursal?: number) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -1331,7 +1343,7 @@ export class PosService {
     }
   }
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ DASHBOARD STATS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ DASHBOARD STATS ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
   async getDashboardStats(idSucursal: number) {
     if (!idSucursal) return null;
     const hoy = new Date();
@@ -1344,7 +1356,7 @@ export class PosService {
     
     const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
 
-    // Ventas del dÃƒÂ­a
+    // Ventas del dÃƒÆ’Ã‚Â­a
     const ventasHoy = await this.ventaRepo
       .createQueryBuilder('v')
       .where('v.fechaVenta >= :inicio', { inicio: inicioHoy }).leftJoin('v.usuario', 'u').andWhere('u.id_sucursal = :idSucursal', { idSucursal })
@@ -1352,7 +1364,7 @@ export class PosService {
       .select(['SUM(v.totalPagado) as total', 'COUNT(*) as cantidad'])
       .getRawOne();
 
-    // Ventas por mÃƒÂ©todo de pago hoy
+    // Ventas por mÃƒÆ’Ã‚Â©todo de pago hoy
     const ventasPagoHoy = await this.ventaRepo
       .createQueryBuilder('v')
       .where('v.fechaVenta >= :inicio', { inicio: inicioHoy })
@@ -1422,12 +1434,12 @@ export class PosService {
       cajaSaldo = Number(corteActivo.fondoInicial) + metodosPago.Efectivo; 
     }
 
-    // Ticket promedio del dÃƒÂ­a
+    // Ticket promedio del dÃƒÆ’Ã‚Â­a
     const ticketPromedio = ventasHoy.cantidad > 0
       ? Number(ventasHoy.total || 0) / Number(ventasHoy.cantidad)
       : 0;
 
-    // Top 5 productos mÃƒÂ¡s vendidos del mes
+    // Top 5 productos mÃƒÆ’Ã‚Â¡s vendidos del mes
     const topProductos = await this.dataSource
       .createQueryBuilder()
       .select(['p.nombre as nombre', 'SUM(d.cantidad) as unidades', 'SUM(d.subtotal) as ingresos'])
@@ -1443,7 +1455,7 @@ export class PosService {
       .limit(5)
       .getRawMany();
 
-    // Ingresos por dÃƒÂ­a Ã¢â‚¬â€ ÃƒÂºltimos 7 dÃƒÂ­as y semana anterior
+    // Ingresos por dÃƒÆ’Ã‚Â­a ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ÃƒÆ’Ã‚Âºltimos 7 dÃƒÆ’Ã‚Â­as y semana anterior
     const limiteSemana = new Date(hoy);
     limiteSemana.setDate(hoy.getDate() - 6);
     limiteSemana.setHours(0, 0, 0, 0);
@@ -1458,7 +1470,7 @@ export class PosService {
         'SUM(v.totalPagado) as total'
       ])
       .leftJoin('v.usuario', 'u')
-      .where('v.fechaVenta >= :inicio', { inicio: limiteSemanaAnt }) // Traemos 14 dÃƒÂ­as
+      .where('v.fechaVenta >= :inicio', { inicio: limiteSemanaAnt }) // Traemos 14 dÃƒÆ’Ã‚Â­as
       .andWhere('u.id_sucursal = :idSucursal', { idSucursal })
       .andWhere("v.estatus != 'Cancelada'")
       .groupBy("DATE_FORMAT(v.fechaVenta, '%Y-%m-%d')")
@@ -1606,7 +1618,7 @@ export class PosService {
           iva: 0,
           anchoTicket: '80mm',
           imprimirLogo: false,
-          mensajeTicket: 'Ã‚Â¡Gracias por su preferencia!',
+          mensajeTicket: 'Ãƒâ€šÃ‚Â¡Gracias por su preferencia!',
           direccion: sucursal.direccion,
           telefono: sucursal.telefono
         });
@@ -1640,7 +1652,7 @@ export class PosService {
     return this.configRepo.save(config);
   }
 
-  // --- FACTURACIÃƒâ€œN (FACTURAPI) ---
+  // --- FACTURACIÃƒÆ’Ã¢â‚¬Å“N (FACTURAPI) ---
   
   async getFacturas(idSucursal: number) {
     const where = idSucursal > 0 ? { sucursal: { idSucursal } } : {};
@@ -1850,7 +1862,7 @@ export class PosService {
     if (idSucursal && rol !== 'Administrador' && rol !== 'Soporte') {
       if (factura.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para cancelar esta factura');
     }
-    if (factura.estatus === 'Cancelada') throw new BadRequestException('La factura ya estÃƒÂ¡ cancelada');
+    if (factura.estatus === 'Cancelada') throw new BadRequestException('La factura ya estÃƒÆ’Ã‚Â¡ cancelada');
     if (!factura.facturapiId) throw new BadRequestException('La factura no tiene un ID de Facturama asociado');
 
     try {
@@ -1895,7 +1907,7 @@ export class PosService {
       const resXml = await this.descargarFacturaArchivo(factura.facturapiId, 'xml');
       const xmlBuffer = Buffer.from(resXml.Content, 'base64');
 
-      // 3. Descargar Acuse de CancelaciÃƒÂ³n
+      // 3. Descargar Acuse de CancelaciÃƒÆ’Ã‚Â³n
       let acuseBuffer: Buffer;
       let isAcuseXml = false;
       try {
@@ -1905,18 +1917,18 @@ export class PosService {
         if (responseAcusePdf.data && responseAcusePdf.data.Content) {
           acuseBuffer = Buffer.from(responseAcusePdf.data.Content, 'base64');
         } else {
-          throw new Error('No se encontrÃƒÂ³ el PDF en la respuesta');
+          throw new Error('No se encontrÃƒÆ’Ã‚Â³ el PDF en la respuesta');
         }
       } catch (errPdf: any) {
-        throw new BadRequestException('El acuse real aÃƒÂºn no estÃƒÂ¡ disponible en Facturama/SAT. Por favor, espere unos minutos e intente descargar de nuevo.');
+        throw new BadRequestException('El acuse real aÃƒÆ’Ã‚Âºn no estÃƒÆ’Ã‚Â¡ disponible en Facturama/SAT. Por favor, espere unos minutos e intente descargar de nuevo.');
       }
       // 4. Comprimir en un archivo ZIP
       const zip = new AdmZip();
       
       // Obtener serie y folio de la base de datos si es posible, o usar el ID
       // Como no tenemos folio y serie directo en pos_facturas, asumiremos PUR-3 basado en el requerimiento visual,
-      // o extraeremos del UUID si existe. Idealmente, esto vendrÃƒÂ­a de un campo en la BD.
-      // Para igualar el formato de tu compaÃƒÂ±ero, usaremos el prefijo PUR- y el ID:
+      // o extraeremos del UUID si existe. Idealmente, esto vendrÃƒÆ’Ã‚Â­a de un campo en la BD.
+      // Para igualar el formato de tu compaÃƒÆ’Ã‚Â±ero, usaremos el prefijo PUR- y el ID:
       const serieFolio = `PUR-${factura.idFactura}`;
       
       const fileNamePdf = `Factura-${serieFolio}.pdf`;
@@ -1935,13 +1947,13 @@ export class PosService {
 
       return zip.toBuffer();
     } catch (error: any) {
-      throw new BadRequestException('Error al generar paquete de cancelaciÃƒÂ³n: ' + error.message);
+      throw new BadRequestException('Error al generar paquete de cancelaciÃƒÆ’Ã‚Â³n: ' + error.message);
     }
   }
 
 
 
-  // --- CATÃƒÂLOGOS SAT ---
+  // --- CATÃƒÆ’Ã‚ÂLOGOS SAT ---
   private satProductosCache: any[] | null = null;
   private satUnidadesCache: any[] | null = null;
 
@@ -1994,7 +2006,7 @@ export class PosService {
   }
 
   // -------------------------
-  // MÃƒâ€œDULO PROFORMAS
+  // MÃƒÆ’Ã¢â‚¬Å“DULO PROFORMAS
   // -------------------------
 
   async getProformas(idSucursal?: number) {
@@ -2034,12 +2046,12 @@ export class PosService {
       doc.moveDown();
       doc.fontSize(12).text(`Folio: ${folioInterno}`);
       doc.text(`Fecha: ${new Date().toLocaleString()}`);
-      doc.text(`Cliente: ${payload.clienteNombre || 'PÃƒÂºblico en General'}`);
+      doc.text(`Cliente: ${payload.clienteNombre || 'PÃƒÆ’Ã‚Âºblico en General'}`);
       doc.moveDown();
 
       // Table Header
       doc.fontSize(10).text('Cant', 50, doc.y, { continued: true });
-      doc.text('DescripciÃƒÂ³n', 100, doc.y, { continued: true });
+      doc.text('DescripciÃƒÆ’Ã‚Â³n', 100, doc.y, { continued: true });
       doc.text('P.U.', 400, doc.y, { continued: true });
       doc.text('Importe', 470, doc.y);
       doc.moveTo(50, doc.y + 5).lineTo(550, doc.y + 5).stroke();
@@ -2062,7 +2074,7 @@ export class PosService {
       // Totals
       doc.fontSize(12).text(`Total: $${Number(venta.totalPagado).toFixed(2)}`, { align: 'right' });
       doc.moveDown(2);
-      doc.fontSize(10).text('Este documento no es un comprobante fiscal vÃƒÂ¡lido.', { align: 'center' });
+      doc.fontSize(10).text('Este documento no es un comprobante fiscal vÃƒÆ’Ã‚Â¡lido.', { align: 'center' });
 
       doc.end();
       stream.on('finish', () => resolve(true));
@@ -2080,7 +2092,7 @@ export class PosService {
 
     const nuevaProforma = this.proformaRepo.create({
       folioInterno,
-      nombreCliente: payload.clienteNombre || 'PÃƒÂºblico en General',
+      nombreCliente: payload.clienteNombre || 'PÃƒÆ’Ã‚Âºblico en General',
       total: venta.totalPagado,
       urlPdf,
       venta,
@@ -2152,54 +2164,54 @@ export class PosService {
       const data = await pdfParse(buffer, { pagerender: render_page });
       const text = data.text;
 
-      // Extraer RFC (PatrÃƒÂ³n estÃƒÂ¡ndar de RFC Mexicano)
-      const rfcMatch = text.match(/([A-Z&Ãƒâ€˜]{3,4}\d{6}[A-V1-9][A-Z1-9][0-9A])/i);
+      // Extraer RFC (PatrÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ndar de RFC Mexicano)
+      const rfcMatch = text.match(/([A-Z&ÃƒÆ’Ã¢â‚¬Ëœ]{3,4}\d{6}[A-V1-9][A-Z1-9][0-9A])/i);
       const rfc = rfcMatch ? rfcMatch[1] : '';
 
       // Extraer CP
-      const cpMatch = text.match(/(?:C[ÃƒÂ³o]digo\s*Postal|CP)[\s\S]*?(\d{5})/i);
+      const cpMatch = text.match(/(?:C[ÃƒÆ’Ã‚Â³o]digo\s*Postal|CP)[\s\S]*?(\d{5})/i);
       const cp = cpMatch ? cpMatch[1] : '';
 
-      // Extraer DenominaciÃƒÂ³n/RazÃƒÂ³n Social buscando entre "Registro Federal de Contribuyentes" y "Nombre, denominaciÃƒÂ³n o razÃƒÂ³n"
+      // Extraer DenominaciÃƒÆ’Ã‚Â³n/RazÃƒÆ’Ã‚Â³n Social buscando entre "Registro Federal de Contribuyentes" y "Nombre, denominaciÃƒÆ’Ã‚Â³n o razÃƒÆ’Ã‚Â³n"
       let nombre = '';
-      const denominacionMatch = text.match(/Registro Federal de Contribuyentes\s*([\s\S]+?)\s*(?:Nombre, denominaci[ÃƒÂ³o]n o raz[ÃƒÂ³o]n|Denominaci[ÃƒÂ³o]n\/Raz[ÃƒÂ³o]n Social)/i);
+      const denominacionMatch = text.match(/Registro Federal de Contribuyentes\s*([\s\S]+?)\s*(?:Nombre, denominaci[ÃƒÆ’Ã‚Â³o]n o raz[ÃƒÆ’Ã‚Â³o]n|Denominaci[ÃƒÆ’Ã‚Â³o]n\/Raz[ÃƒÆ’Ã‚Â³o]n Social)/i);
       if (denominacionMatch && denominacionMatch[1]) {
-        // Reemplazar saltos de lÃƒÂ­nea por espacios para unir nombres separados en varias lÃƒÂ­neas
+        // Reemplazar saltos de lÃƒÆ’Ã‚Â­nea por espacios para unir nombres separados en varias lÃƒÆ’Ã‚Â­neas
         nombre = denominacionMatch[1].replace(/[\r\n]+/g, ' ').trim();
       }
 
-      // Extraer RÃƒÂ©gimen Capital (A veces viene en otra lÃƒÂ­nea)
-      const regimenCapitalMatch = text.match(/R[ÃƒÂ©e]gimen Capital:?\s*([^\n]+)/i);
+      // Extraer RÃƒÆ’Ã‚Â©gimen Capital (A veces viene en otra lÃƒÆ’Ã‚Â­nea)
+      const regimenCapitalMatch = text.match(/R[ÃƒÆ’Ã‚Â©e]gimen Capital:?\s*([^\n]+)/i);
       if (regimenCapitalMatch && regimenCapitalMatch[1]) {
         const rc = regimenCapitalMatch[1].trim();
-        // Si el rc no estÃƒÂ¡ vacÃƒÂ­o y no es igual al texto "RÃƒÂ©gimen Capital" o "N/A"
+        // Si el rc no estÃƒÆ’Ã‚Â¡ vacÃƒÆ’Ã‚Â­o y no es igual al texto "RÃƒÆ’Ã‚Â©gimen Capital" o "N/A"
         if (rc && nombre && !nombre.includes(rc) && rc.length < 20) {
           nombre += ' ' + rc; // Ej: EMPRESA SA DE CV
         }
       }
 
-      // Mapear RÃƒÂ©gimen Fiscal
+      // Mapear RÃƒÆ’Ã‚Â©gimen Fiscal
       let regimenFiscal = '';
       if (text.match(/General de Ley Personas Morales/i)) regimenFiscal = '601';
-      else if (text.match(/Personas F[ÃƒÂ­i]sicas con Actividades Empresariales/i)) regimenFiscal = '612';
-      else if (text.match(/Incorporaci[ÃƒÂ³o]n Fiscal/i)) regimenFiscal = '621';
+      else if (text.match(/Personas F[ÃƒÆ’Ã‚Â­i]sicas con Actividades Empresariales/i)) regimenFiscal = '612';
+      else if (text.match(/Incorporaci[ÃƒÆ’Ã‚Â³o]n Fiscal/i)) regimenFiscal = '621';
       else if (text.match(/Simplificado de Confianza/i)) regimenFiscal = '626';
       else if (text.match(/Sueldos y Salarios/i)) regimenFiscal = '605';
       else if (text.match(/Sin obligaciones/i)) regimenFiscal = '616';
 
       let direccionCompleta = '';
-      const domicilioMatch = text.match(/Datos del domicilio registrado([\s\S]+?)Actividades Econ[ÃƒÂ³o]micas/i);
+      const domicilioMatch = text.match(/Datos del domicilio registrado([\s\S]+?)Actividades Econ[ÃƒÆ’Ã‚Â³o]micas/i);
       if (domicilioMatch) {
         let dom = domicilioMatch[1].replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ');
         const getField = (regex: RegExp) => {
           const m = dom.match(regex);
           return m ? m[1].trim() : '';
         };
-        const calle = getField(/(?:Nombre\s*de\s*Vialidad|NombredeVialidad):?([\s\S]*?)(?:N[ÃƒÂºuÃ‡Â§]?mero)/i);
-        const ext = getField(/(?:N[ÃƒÂºuÃ‡Â§]?mero\s*Exterior|N[ÃƒÂºuÃ‡Â§]?meroExterior):?([\s\S]*?)(?:N[ÃƒÂºuÃ‡Â§]?mero\s*Interior|N[ÃƒÂºuÃ‡Â§]?meroInterior|Nombre\s*de\s*la\s*Colonia|Nombredela Colonia)/i);
-        const int = getField(/(?:N[ÃƒÂºuÃ‡Â§]?mero\s*Interior|N[ÃƒÂºuÃ‡Â§]?meroInterior):?([\s\S]*?)(?:Nombre\s*de\s*la\s*Colonia|Nombredela Colonia)/i);
+        const calle = getField(/(?:Nombre\s*de\s*Vialidad|NombredeVialidad):?([\s\S]*?)(?:N[ÃƒÆ’Ã‚ÂºuÃƒâ€¡Ã‚Â§]?mero)/i);
+        const ext = getField(/(?:N[ÃƒÆ’Ã‚ÂºuÃƒâ€¡Ã‚Â§]?mero\s*Exterior|N[ÃƒÆ’Ã‚ÂºuÃƒâ€¡Ã‚Â§]?meroExterior):?([\s\S]*?)(?:N[ÃƒÆ’Ã‚ÂºuÃƒâ€¡Ã‚Â§]?mero\s*Interior|N[ÃƒÆ’Ã‚ÂºuÃƒâ€¡Ã‚Â§]?meroInterior|Nombre\s*de\s*la\s*Colonia|Nombredela Colonia)/i);
+        const int = getField(/(?:N[ÃƒÆ’Ã‚ÂºuÃƒâ€¡Ã‚Â§]?mero\s*Interior|N[ÃƒÆ’Ã‚ÂºuÃƒâ€¡Ã‚Â§]?meroInterior):?([\s\S]*?)(?:Nombre\s*de\s*la\s*Colonia|Nombredela Colonia)/i);
         const col = getField(/(?:Nombre\s*de\s*la\s*Colonia|Nombredela Colonia):?([\s\S]*?)(?:Nombre\s*de\s*la\s*Localidad|Nombredela Localidad)/i);
-        const mun = getField(/(?:Municipio\s*o\s*Demarcaci[ÃƒÂ³o]n\s*Territorial|Municipioo Demarcaci[ÃƒÂ³o]nTerritorial|Municipio\s*o\s*DemarcacinTerritorial):?([\s\S]*?)(?:Nombre\s*de\s*la\s*Entidad|Nombredela Entidad)/i);
+        const mun = getField(/(?:Municipio\s*o\s*Demarcaci[ÃƒÆ’Ã‚Â³o]n\s*Territorial|Municipioo Demarcaci[ÃƒÆ’Ã‚Â³o]nTerritorial|Municipio\s*o\s*DemarcacinTerritorial):?([\s\S]*?)(?:Nombre\s*de\s*la\s*Entidad|Nombredela Entidad)/i);
         const est = getField(/(?:Entidad\s*Federativa|EntidadFederativa):?([\s\S]*?)(?:Entre\s*Calle|EntreCalle)/i);
         
         const partes: string[] = [];
@@ -2245,9 +2257,9 @@ export class PosService {
     }
   }
 
-  // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+  // ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
   // PROVEEDORES
-  // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+  // ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 
   async getProveedores(idSucursal?: number) {
     const where: any = {};
@@ -2313,9 +2325,9 @@ export class PosService {
     return { success: true };
   }
 
-  // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+  // ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
   // COMPRAS
-  // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+  // ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 
   async buscarConceptosCompras(q: string, idSucursal?: number) {
     if (!q || q.length < 2) return [];
@@ -2498,9 +2510,9 @@ export class PosService {
     return { success: true, compra };
   }
 
-  // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+  // ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
   // DEVOLUCIONES
-  // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+  // ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 
   async getDevoluciones(idSucursal?: number) {
     const where: any = {};
@@ -2517,7 +2529,7 @@ export class PosService {
       where: { idDevolucion: id },
       relations: { venta: { detalles: { producto: true } }, usuario: true, sucursal: true }
     });
-    if (!dev) throw new NotFoundException('DevoluciÃƒÂ³n no encontrada');
+    if (!dev) throw new NotFoundException('DevoluciÃƒÆ’Ã‚Â³n no encontrada');
     return dev;
   }
 
@@ -2572,21 +2584,21 @@ export class PosService {
             producto: { idProducto: item.idProducto } as any,
             usuario: idUsuario ? { idUsuario } as any : undefined,
             sucursal: idSucursal ? { idSucursal } as any : undefined,
-            tipoMovimiento: 'DevoluciÃƒÂ³n (Stock)',
+            tipoMovimiento: 'DevoluciÃƒÆ’Ã‚Â³n (Stock)',
             cantidad: item.cantidad,
-            referencia: `DevoluciÃƒÂ³n de venta ${venta.folio}${payload.motivo ? ' - ' + payload.motivo : ''}`,
+            referencia: `DevoluciÃƒÆ’Ã‚Â³n de venta ${venta.folio}${payload.motivo ? ' - ' + payload.motivo : ''}`,
           });
           await queryRunner.manager.save(PosMovimientoInventario, movimiento);
         } else {
-          // DevoluciÃƒÂ³n a merma
+          // DevoluciÃƒÆ’Ã‚Â³n a merma
           const movimiento = this.movimientoRepo.create({
             producto: { idProducto: item.idProducto } as any,
             usuario: idUsuario ? { idUsuario } as any : undefined,
             sucursal: idSucursal ? { idSucursal } as any : undefined,
-            tipoMovimiento: 'DevoluciÃƒÂ³n (Merma)',
+            tipoMovimiento: 'DevoluciÃƒÆ’Ã‚Â³n (Merma)',
             cantidad: item.cantidad,
             costoUnitario: pDev ? pDev.precioUnitario : item.precioUnitario,
-            referencia: `DevoluciÃƒÂ³n a Merma de venta ${venta.folio}${payload.motivo ? ' - ' + payload.motivo : ''}`,
+            referencia: `DevoluciÃƒÆ’Ã‚Â³n a Merma de venta ${venta.folio}${payload.motivo ? ' - ' + payload.motivo : ''}`,
           });
           await queryRunner.manager.save(PosMovimientoInventario, movimiento);
         }
@@ -2601,7 +2613,7 @@ export class PosService {
       venta.estatus = tipo === 'Total' ? 'Devuelta' : 'Dev. Parcial';
       await queryRunner.manager.save(PosVenta, venta);
 
-      // Registrar la devoluciÃƒÂ³n
+      // Registrar la devoluciÃƒÆ’Ã‚Â³n
       const devolucion = this.devolucionRepo.create({
         venta: { idVenta: payload.idVenta } as any,
         usuario: idUsuario ? { idUsuario } as any : undefined,
@@ -2618,7 +2630,7 @@ export class PosService {
       return { success: true, devolucion: savedDev, montoDevuelto, tipo };
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new BadRequestException('Error al registrar la devoluciÃƒÂ³n: ' + (error instanceof Error ? error.message : String(error)));
+      throw new BadRequestException('Error al registrar la devoluciÃƒÆ’Ã‚Â³n: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       await queryRunner.release();
     }
@@ -2699,7 +2711,7 @@ export class PosService {
       where: { idCotizacion },
       relations: { detalles: { producto: true }, cliente: true, usuario: true, sucursal: true }
     });
-    if (!cotizacion) throw new NotFoundException('CotizaciÃƒÂ³n no encontrada');
+    if (!cotizacion) throw new NotFoundException('CotizaciÃƒÆ’Ã‚Â³n no encontrada');
     return cotizacion;
   }
 
@@ -2834,7 +2846,7 @@ export class PosService {
   async cambiarEstatusCotizacion(idCotizacion: number, estatus: string, idSucursal?: number, rol?: string) {
     const cotizacion = await this.getCotizacionById(idCotizacion);
     if (idSucursal && rol !== 'Administrador' && rol !== 'Soporte') {
-      if (cotizacion.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para modificar esta cotizaciÃƒÂ³n');
+      if (cotizacion.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para modificar esta cotizaciÃƒÆ’Ã‚Â³n');
     }
     cotizacion.estatus = estatus;
     return this.cotizacionRepo.save(cotizacion);
@@ -2843,7 +2855,7 @@ export class PosService {
   async eliminarCotizacion(idCotizacion: number, idSucursal?: number, rol?: string) {
     const cotizacion = await this.getCotizacionById(idCotizacion);
     if (idSucursal && rol !== 'Administrador' && rol !== 'Soporte') {
-      if (cotizacion.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para eliminar esta cotizaciÃƒÂ³n');
+      if (cotizacion.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para eliminar esta cotizaciÃƒÆ’Ã‚Â³n');
     }
     return this.cotizacionRepo.remove(cotizacion);
   }
@@ -2875,7 +2887,7 @@ export class PosService {
       if (d.producto) {
         const mov = new PosMovimientoInventario();
         mov.tipoMovimiento = 'SALIDA';
-        mov.referencia = `ConversiÃƒÂ³n de CotizaciÃƒÂ³n ${cotizacion.folio}`;
+        mov.referencia = `ConversiÃƒÆ’Ã‚Â³n de CotizaciÃƒÆ’Ã‚Â³n ${cotizacion.folio}`;
         mov.cantidad = d.cantidad;
         mov.producto = d.producto;
         mov.sucursal = cotizacion.sucursal;
@@ -2938,7 +2950,7 @@ export class PosService {
 
 
 
-      const rfcs = text.match(/[A-Z&Ãƒâ€˜]{3,4}\d{6}[A-V1-9][A-Z1-9][0-9A]/gi) || [];
+      const rfcs = text.match(/[A-Z&ÃƒÆ’Ã¢â‚¬Ëœ]{3,4}\d{6}[A-V1-9][A-Z1-9][0-9A]/gi) || [];
 
       let rfcEmisor = rfcs && rfcs.length > 0 ? (rfcs[0]?.toUpperCase() || '') : '';
 
@@ -3095,7 +3107,7 @@ export class PosService {
 
   }
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ IMPORTACIÃƒâ€œN MASIVA Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ IMPORTACIÃƒÆ’Ã¢â‚¬Å“N MASIVA ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
 
   generarPlantillaExcel(tipo: 'productos' | 'clientes' | 'proveedores'): Buffer {
     const wb = XLSX.utils.book_new();
@@ -3107,14 +3119,14 @@ export class PosService {
         ejemplo = [{ 'nombre*': 'Miel a Granel', 'precioCompra*': 40.00, 'utilidad%': 25, 'stock': 100, 'stockMinimo': 10, 'codigoBarras': 'MG-001', 'categoria': 'Granel', 'aplicaIva': 'NO', 'tasaIva': 0, 'tipoArticulo': 'Terminado', 'unidadMedida': 'kg', 'claveSAT': '50192403', 'unidadSAT': 'KGM' }];
     } else if (tipo === 'clientes') {
       headers = ['nombreCompleto*', 'rfc', 'telefono', 'correo', 'direccion', 'cp', 'regimenFiscal', 'usoCfdi', 'formaPago', 'metodoPago'];
-      ejemplo = [{ 'nombreCompleto*': 'Juan PÃƒÂ©rez GarcÃƒÂ­a', 'rfc': 'PEGJ900101ABC', 'telefono': '6181234567', 'correo': 'juan@ejemplo.com', 'direccion': 'Calle Falsa 123', 'cp': '34000', 'regimenFiscal': '616', 'usoCfdi': 'G03', 'formaPago': '01', 'metodoPago': 'PUE' }];
+      ejemplo = [{ 'nombreCompleto*': 'Juan PÃƒÆ’Ã‚Â©rez GarcÃƒÆ’Ã‚Â­a', 'rfc': 'PEGJ900101ABC', 'telefono': '6181234567', 'correo': 'juan@ejemplo.com', 'direccion': 'Calle Falsa 123', 'cp': '34000', 'regimenFiscal': '616', 'usoCfdi': 'G03', 'formaPago': '01', 'metodoPago': 'PUE' }];
     } else {
       headers = ['nombre*', 'rfc', 'contacto', 'telefono', 'correo', 'direccion', 'cp', 'regimenFiscal'];
-      ejemplo = [{ 'nombre*': 'Distribuidora XYZ', 'rfc': 'DXY990101ABC', 'contacto': 'MarÃƒÂ­a LÃƒÂ³pez', 'telefono': '6189876543', 'correo': 'ventas@xyz.com', 'direccion': 'Av. Industrial 456', 'cp': '34100', 'regimenFiscal': '601' }];
+      ejemplo = [{ 'nombre*': 'Distribuidora XYZ', 'rfc': 'DXY990101ABC', 'contacto': 'MarÃƒÆ’Ã‚Â­a LÃƒÆ’Ã‚Â³pez', 'telefono': '6189876543', 'correo': 'ventas@xyz.com', 'direccion': 'Av. Industrial 456', 'cp': '34100', 'regimenFiscal': '601' }];
     }
 
     const ws = XLSX.utils.json_to_sheet(ejemplo, { header: headers });
-    // Ancho de columnas automÃƒÂ¡tico
+    // Ancho de columnas automÃƒÆ’Ã‚Â¡tico
     ws['!cols'] = headers.map(() => ({ wch: 22 }));
     XLSX.utils.book_append_sheet(wb, ws, tipo.charAt(0).toUpperCase() + tipo.slice(1));
     return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }));
@@ -3137,7 +3149,7 @@ export class PosService {
         const utilidad = parseFloat(fila['utilidad%'] || fila['utilidad'] || '18');
         
         if (!nombre) { errores.push({ fila: numFila, error: 'El campo "nombre" es obligatorio' }); continue; }
-        if (isNaN(precioCompra) || precioCompra < 0) { errores.push({ fila: numFila, error: 'El campo "precioCompra" es invÃƒÂ¡lido' }); continue; }
+        if (isNaN(precioCompra) || precioCompra < 0) { errores.push({ fila: numFila, error: 'El campo "precioCompra" es invÃƒÆ’Ã‚Â¡lido' }); continue; }
         
         const precioPublico = precioCompra * (1 + (utilidad / 100));
 
@@ -3161,7 +3173,7 @@ export class PosService {
         }
 
         const aplicaIvaStr = String(fila['aplicaIva'] || '').toUpperCase();
-          const aplicaIva = aplicaIvaStr === 'SÃƒÂ­' || aplicaIvaStr === 'SÃƒÂ­' || aplicaIvaStr === 'TRUE' || aplicaIvaStr === '1' || aplicaIvaStr === 'YES';
+          const aplicaIva = aplicaIvaStr === 'SÃƒÆ’Ã‚Â­' || aplicaIvaStr === 'SÃƒÆ’Ã‚Â­' || aplicaIvaStr === 'TRUE' || aplicaIvaStr === '1' || aplicaIvaStr === 'YES';
           const ivaRate = parseFloat(fila['tasaIva'] || fila['iva'] || (aplicaIva ? '16' : '0'));
           
           const baseIva = precioPublico; // Asumimos que precioPublico no incluye descuentos fijos por defecto al importar
@@ -3198,7 +3210,7 @@ export class PosService {
             producto: { idProducto: producto.idProducto },
             tipoMovimiento: 'Entrada',
             cantidad: producto.stockActual,
-            referencia: 'Stock inicial - importaciÃƒÂ³n masiva',
+            referencia: 'Stock inicial - importaciÃƒÆ’Ã‚Â³n masiva',
             ...(idSucursal ? { sucursal: { idSucursal } } : {}),
           });
           await this.movimientoRepo.save(mov);
@@ -3210,7 +3222,7 @@ export class PosService {
         if (errorMsg.includes('Duplicate entry')) {
           const match = errorMsg.match(/Duplicate entry '(.*?)'/);
           const val = match ? match[1] : '';
-          errorMsg = `El cÃƒÂ³digo de barras o clave '${val}' ya existe en el inventario.`;
+          errorMsg = `El cÃƒÆ’Ã‚Â³digo de barras o clave '${val}' ya existe en el inventario.`;
         }
         errores.push({ fila: numFila, error: errorMsg });
       }
@@ -3265,7 +3277,7 @@ export class PosService {
         if (errorMsg.includes('Duplicate entry')) {
           const match = errorMsg.match(/Duplicate entry '(.*?)'/);
           const val = match ? match[1] : '';
-          errorMsg = `El RFC o dato '${val}' ya estÃƒÂ¡ registrado.`;
+          errorMsg = `El RFC o dato '${val}' ya estÃƒÆ’Ã‚Â¡ registrado.`;
         }
         errores.push({ fila: numFila, error: errorMsg });
       }
@@ -3317,7 +3329,7 @@ export class PosService {
         if (errorMsg.includes('Duplicate entry')) {
           const match = errorMsg.match(/Duplicate entry '(.*?)'/);
           const val = match ? match[1] : '';
-          errorMsg = `El RFC o dato '${val}' ya estÃƒÂ¡ registrado.`;
+          errorMsg = `El RFC o dato '${val}' ya estÃƒÆ’Ã‚Â¡ registrado.`;
         }
         errores.push({ fila: numFila, error: errorMsg });
       }
@@ -3566,7 +3578,7 @@ export class PosService {
           throw new BadRequestException(`Stock insuficiente en sucursal origen para: ${prodOrigen.nombre} (Stock: ${stockActual}, Requerido: ${cantidadTraspaso})`);
         }
 
-        // 2. Buscar equivalente en destino por cÃƒÂ³digo de barras
+        // 2. Buscar equivalente en destino por cÃƒÆ’Ã‚Â³digo de barras
         let prodDestino = await queryRunner.manager.findOne(PosProducto, {
           where: { 
             codigoBarras: prodOrigen.codigoBarras,
@@ -3637,7 +3649,7 @@ export class PosService {
       }
 
       await queryRunner.commitTransaction();
-      return { success: true, traspaso: savedTraspaso, message: 'Traspaso completado con ÃƒÂ©xito' };
+      return { success: true, traspaso: savedTraspaso, message: 'Traspaso completado con ÃƒÆ’Ã‚Â©xito' };
 
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -3654,7 +3666,7 @@ export class PosService {
         { sucursalDestino: { empresa: { idEmpresa } } }
       ],
       relations: { sucursalOrigen: true, sucursalDestino: true, usuario: true },
-      order: { fecha: 'DESC' }
+      order: { fecha: 'DESC' }, take: 200
     });
   }
 
@@ -3693,7 +3705,7 @@ export class PosService {
     yOffset -= 20;
 
     // Table Header
-    drawText('CÃƒâ€œDIGO', 50, timesRomanBoldFont, 10);
+    drawText('CÃƒÆ’Ã¢â‚¬Å“DIGO', 50, timesRomanBoldFont, 10);
     yOffset += 15;
     drawText('PRODUCTO', 150, timesRomanBoldFont, 10);
     yOffset += 15;
@@ -3716,7 +3728,7 @@ export class PosService {
     page.drawLine({ start: { x: 100, y: yOffset }, end: { x: 250, y: yOffset }, thickness: 1, color: rgb(0,0,0) });
     page.drawLine({ start: { x: 350, y: yOffset }, end: { x: 500, y: yOffset }, thickness: 1, color: rgb(0,0,0) });
     yOffset -= 15;
-    drawText('Firma de EnvÃƒÂ­o', 120, timesRomanFont, 10);
+    drawText('Firma de EnvÃƒÆ’Ã‚Â­o', 120, timesRomanFont, 10);
     yOffset += 15;
     drawText('Firma de Recibido', 370, timesRomanFont, 10);
 
@@ -3751,8 +3763,9 @@ export class PosService {
     return this.gastoRepo.find({
       where: { sucursal: { idSucursal } },
       relations: { usuario: true, corte: true },
-      order: { fecha: 'DESC' }
+      order: { fecha: 'DESC' }, take: 200
     });
   }
 }
+
 
