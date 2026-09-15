@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UploadedFiles, Headers, Put, Query, BadRequestException, Res, UseGuards } from '@nestjs/common';
+﻿import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, UploadedFiles, Headers, Put, Query, BadRequestException, Res, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { RolesGuard, Roles } from '../auth/roles.guard';
 
@@ -40,7 +40,7 @@ export class PosController {
     return this.posService.getEmpresaPorUsuario(username);
   }
 
-  // ─── SUCURSALES ─────────────────────────────────────────────────
+  // â”€â”€â”€ SUCURSALES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Public()
   @Get('sucursales')
   async getSucursales(@Headers("x-empresa-id") idEmpresa: string) {
@@ -314,7 +314,7 @@ export class PosController {
     return this.posService.anularMovimiento(Number(id), user?.idSucursal, user?.rol);
   }
 
-  // ─── NUEVO PRODUCTO ──────────────────────────────────────────────
+  // â”€â”€â”€ NUEVO PRODUCTO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Post('productos')
   crearProducto(@Headers("x-sucursal-id") idSucursal: string, @Body() body: any) {
     body.idSucursal = Number(idSucursal);
@@ -331,27 +331,27 @@ export class PosController {
     return this.posService.eliminarCodigoAdicional(Number(idCodigo));
   }
 
-  // ⚖️ AJUSTE DE STOCK ⚖️
+  // âš–ï¸ AJUSTE DE STOCK âš–ï¸
   @Post('inventario/ajuste')
   ajustarStock(@Headers("x-sucursal-id") idSucursal: string, @Headers("x-usuario-id") idUsuarioHeader: string, @Body() body: any) {
     const idUsuario = idUsuarioHeader ? Number(idUsuarioHeader) : (body.idUsuario || 1);
     return this.posService.ajustarStock(body.idProducto, body.stockReal, body.motivo, idUsuario, Number(idSucursal));
   }
 
-  // 🗑️ REGISTRO DE MERMAS 🗑️
+  // ðŸ—‘ï¸ REGISTRO DE MERMAS ðŸ—‘ï¸
   @Post('inventario/merma')
   registrarMerma(@Headers("x-sucursal-id") idSucursal: string, @Headers("x-usuario-id") idUsuarioHeader: string, @Body() body: any) {
     const idUsuario = idUsuarioHeader ? Number(idUsuarioHeader) : (body.idUsuario || 1);
     return this.posService.registrarMerma(body.idProducto, body.cantidad, body.motivo, idUsuario, Number(idSucursal));
   }
 
-  // ─── DASHBOARD STATS ────────────────────────────────────────────
+  // â”€â”€â”€ DASHBOARD STATS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Get('dashboard/stats')
   getDashboardStats(@Headers("x-sucursal-id") idSucursal: string) {
     return this.posService.getDashboardStats(Number(idSucursal));
   }
 
-  // ─── EMPRESAS ───────────────────────────────────────────────────
+  // â”€â”€â”€ EMPRESAS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Get('empresas')
   getEmpresas(@Headers("x-empresa-id") idEmpresa: string) {
     return this.posService.getEmpresas(idEmpresa ? Number(idEmpresa) : undefined);
@@ -367,7 +367,7 @@ export class PosController {
     return this.posService.actualizarEmpresa(Number(id), payload);
   }
 
-  // ─── CATEGORIAS ─────────────────────────────────────────────────
+  // â”€â”€â”€ CATEGORIAS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Post('categorias')
   crearCategoria(@Headers("x-sucursal-id") idSucursal: string, @Body() payload: CategoriaDto) {
     (payload as any).idSucursal = Number(idSucursal);
@@ -379,7 +379,7 @@ export class PosController {
     return this.posService.actualizarCategoria(Number(id), payload);
   }
 
-  // ─── CONFIGURACIONES ────────────────────────────────────────────
+  // â”€â”€â”€ CONFIGURACIONES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @Get('configuracion')
   getConfiguracion(@Headers("x-sucursal-id") idSucursal: string) {
     if (!idSucursal) return null;
@@ -398,7 +398,7 @@ export class PosController {
     return this.posService.getAllConfiguraciones();
   }
 
-  // ─── UPLOADS ────────────────────────────────────────────────────
+  // â”€â”€â”€ UPLOADS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // FACTURAS
   @Get('facturas')
   getFacturas(@Headers('x-sucursal-id') idSucursal: string) {
@@ -469,12 +469,12 @@ export class PosController {
     } catch (error: any) {
       console.error(error);
       const status = error.getStatus ? error.getStatus() : (error.status || 500);
-      res.status(status).send('Error al generar el paquete de cancelación: ' + error.message);
+      res.status(status).send('Error al generar el paquete de cancelaciÃ³n: ' + error.message);
     }
   }
 
   // -------------------------
-  // MÓDULO CATÁLOGOS SAT
+  // MÃ“DULO CATÃLOGOS SAT
   // -------------------------
   @Get('catalogo-sat/productos')
   async buscarProductosSAT(@Query('q') query: string) {
@@ -487,7 +487,7 @@ export class PosController {
   }
 
   // -------------------------
-  // MÓDULO PROFORMAS
+  // MÃ“DULO PROFORMAS
   // -------------------------
 
   @Get('proformas')
@@ -501,7 +501,7 @@ export class PosController {
   }
 
   // -------------------------
-  // MÓDULO COTIZACIONES
+  // MÃ“DULO COTIZACIONES
   // -------------------------
 
   @Get('cotizaciones')
@@ -540,7 +540,7 @@ export class PosController {
 
   @Patch('cotizaciones/:id/convertir')
   convertirCotizacionAVenta(@Param('id') id: string, @Headers('x-usuario-id') idUsuario: string) {
-    if (!idUsuario) throw new BadRequestException('Se requiere ID de usuario en headers para convertir cotización a venta.');
+    if (!idUsuario) throw new BadRequestException('Se requiere ID de usuario en headers para convertir cotizaciÃ³n a venta.');
     return this.posService.convertirCotizacionAVenta(Number(id), Number(idUsuario));
   }
 
@@ -568,7 +568,7 @@ export class PosController {
   @UseInterceptors(FileInterceptor('file')) // memory storage by default
   async parseCsf(@UploadedFile() file: Express.Multer.File, @Headers('x-sucursal-id') idSucursal: string) {
     if (!file) {
-      return { success: false, error: 'No se subió ningún archivo' };
+      return { success: false, error: 'No se subiÃ³ ningÃºn archivo' };
     }
     return this.posService.parseCsf(file.buffer, idSucursal ? Number(idSucursal) : undefined);
   }
@@ -576,14 +576,14 @@ export class PosController {
   @Get('utils/buscar-rfc/:rfc')
   async buscarRfc(@Param('rfc') rfc: string) {
     if (!rfc || rfc.length < 12) {
-      return { success: false, error: 'RFC inválido' };
+      return { success: false, error: 'RFC invÃ¡lido' };
     }
     return this.posService.buscarRfc(rfc);
   }
 
-  // ═══════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // PROVEEDORES
-  // ═══════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   @Get('proveedores')
   getProveedores(@Headers('x-sucursal-id') idSucursal: string) {
@@ -605,9 +605,9 @@ export class PosController {
     return this.posService.eliminarProveedor(Number(id), user?.idSucursal, user?.rol);
   }
 
-  // ═══════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // COMPRAS
-  // ═══════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   @Get('compras')
   getCompras(
@@ -663,9 +663,9 @@ export class PosController {
     return this.posService.subirFacturaCompra(Number(id), pdfPath, xmlPath);
   }
 
-  // ═══════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // DEVOLUCIONES
-  // ═══════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   @Get('devoluciones')
   getDevoluciones(@Headers('x-sucursal-id') idSucursal: string) {
@@ -700,13 +700,13 @@ export class PosController {
     }
   }
 
-  // ─── IMPORTACIÓN MASIVA ──────────────────────────────────────────────────────
+  // â”€â”€â”€ IMPORTACIÃ“N MASIVA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   @Public()
   @Get('importar/plantilla/:tipo')
   descargarPlantilla(@Param('tipo') tipo: string, @Res() res: any) {
     if (!['productos', 'clientes', 'proveedores'].includes(tipo)) {
-      throw new BadRequestException('Tipo inválido. Usa: productos, clientes o proveedores');
+      throw new BadRequestException('Tipo invÃ¡lido. Usa: productos, clientes o proveedores');
     }
     const buffer = this.posService.generarPlantillaExcel(tipo as any);
     res.setHeader('Content-Disposition', `attachment; filename="plantilla_${tipo}.xlsx"`);
@@ -720,7 +720,7 @@ export class PosController {
     @UploadedFile() archivo: Express.Multer.File,
     @Headers('x-sucursal-id') idSucursal: string
   ) {
-    if (!archivo) throw new BadRequestException('No se recibió ningún archivo');
+    if (!archivo) throw new BadRequestException('No se recibiÃ³ ningÃºn archivo');
     return this.posService.importarProductos(archivo.buffer, idSucursal ? Number(idSucursal) : undefined);
   }
 
@@ -730,7 +730,7 @@ export class PosController {
     @UploadedFile() archivo: Express.Multer.File,
     @Headers('x-sucursal-id') idSucursal: string
   ) {
-    if (!archivo) throw new BadRequestException('No se recibió ningún archivo');
+    if (!archivo) throw new BadRequestException('No se recibiÃ³ ningÃºn archivo');
     return this.posService.importarClientes(archivo.buffer, idSucursal ? Number(idSucursal) : undefined);
   }
 
@@ -740,11 +740,11 @@ export class PosController {
     @UploadedFile() archivo: Express.Multer.File,
     @Headers('x-sucursal-id') idSucursal: string
   ) {
-    if (!archivo) throw new BadRequestException('No se recibió ningún archivo');
+    if (!archivo) throw new BadRequestException('No se recibiÃ³ ningÃºn archivo');
     return this.posService.importarProveedores(archivo.buffer, idSucursal ? Number(idSucursal) : undefined);
   }
 
-  // ─── RECETAS / PRODUCCION ─────────────────────────────────────────
+  // â”€â”€â”€ RECETAS / PRODUCCION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   @Get('productos/:id/recetas')
   getRecetasProducto(@Param('id') id: string) {
@@ -825,4 +825,16 @@ export class PosController {
     });
     res.end(pdfBuffer);
   }
+
+  // --- GASTOS ---
+  @Post('gastos')
+  registrarGasto(@Body() payload: { concepto: string; monto: number }, @Headers('x-usuario-id') idUsuario: string, @Headers('x-sucursal-id') idSucursal: string) {
+    return this.posService.registrarGasto(payload, Number(idUsuario), Number(idSucursal));
+  }
+
+  @Get('gastos')
+  getGastos(@Headers('x-sucursal-id') idSucursal: string) {
+    return this.posService.getGastos(Number(idSucursal));
+  }
 }
+

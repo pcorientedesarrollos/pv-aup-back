@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RolesGuard } from '../auth/roles.guard';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -18,6 +18,7 @@ import { PosMovimientoInventario } from './entities/pos-movimiento-inventario.en
 import { PosConfiguracion } from './entities/pos-configuracion.entity';
 import { PosEmpresa } from './entities/pos-empresa.entity';
 import { PosFactura } from './entities/pos-factura.entity';
+import { PosGasto } from './entities/pos-gasto.entity';
 import { PosProforma } from './entities/pos-proforma.entity';
 import { PosProveedor } from './entities/pos-proveedor.entity';
 import { PosCompra } from './entities/pos-compra.entity';
@@ -40,6 +41,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       PosCliente,
       PosUsuario,
       PosCorteCaja,
+      PosGasto,
       PosSucursal,
       PosVenta,
       PosVentaDetalle,
@@ -72,3 +74,4 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
   exports: [PosService]
 })
 export class PosModule {}
+
