@@ -3777,7 +3777,7 @@ export class PosService {
       concepto: payload.concepto,
       monto: payload.monto,
       observaciones: payload.observaciones,
-      categoria: payload.idCategoria ? { idCategoria: payload.idCategoria } : null,
+      categoria: payload.idCategoria ? { idCategoria: payload.idCategoria } : undefined,
       sucursal: { idSucursal },
       usuario: { idUsuario },
       corte: { idCorte: turno.idCorte }
@@ -3795,9 +3795,6 @@ export class PosService {
       order: { fecha: 'DESC' }, take: 200
     });
   }
-}
-
-
 
   // --- CATEGORIAS DE GASTOS ---
   async getCategoriasGastos() {
@@ -3809,3 +3806,5 @@ export class PosService {
     const cat = this.gastoCategoriaRepo.create({ nombre, estatus: true });
     return this.gastoCategoriaRepo.save(cat);
   }
+
+}
