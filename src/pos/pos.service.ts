@@ -53,6 +53,7 @@ export class PosService {
     @InjectRepository(PosUsuario) private usuarioRepo: Repository<PosUsuario>,
     @InjectRepository(PosCorteCaja) private corteRepo: Repository<PosCorteCaja>,
     @InjectRepository(PosGasto) private gastoRepo: Repository<PosGasto>,
+    @InjectRepository(PosGastoCategoria) private gastoCategoriaRepo: Repository<PosGastoCategoria>,
     @InjectRepository(PosMovimientoInventario) private movimientoRepo: Repository<PosMovimientoInventario>,
     @InjectRepository(PosEmpresa) private empresaRepo: Repository<PosEmpresa>,
     @InjectRepository(PosConfiguracion) private configRepo: Repository<PosConfiguracion>,
