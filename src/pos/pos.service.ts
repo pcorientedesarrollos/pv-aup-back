@@ -179,6 +179,7 @@ export class PosService {
       usuario: user.nombreUsuario, 
       idSucursal: user.sucursal?.idSucursal,
       sucursalNombre: user.sucursal?.nombre || 'Global',
+        permisos: user.permisos || [],
       empresa: empresa ? { idEmpresa: empresa.idEmpresa, nombre: empresa.nombre, logoUrl: empresa.logoUrl, colorPrincipal: empresa.colorPrincipal } : null
     };
     
