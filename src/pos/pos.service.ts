@@ -553,7 +553,7 @@ export class PosService {
     if (!usuario) throw new BadRequestException('Usuario no encontrado');
 
     const corteExistente = await this.corteRepo.findOne({
-      where: { usuario: { idUsuario: payload.idUsuario }, estatus: 'Abierto' }
+      where: { usuario: { sucursal: { idSucursal: usuario.sucursal?.idSucursal || 1 } }, estatus: 'Abierto' }
     });
 
     if (corteExistente) {
@@ -577,8 +577,10 @@ export class PosService {
   }
 
   async getTurnoActivo(idUsuario: number) {
+    const usuario = await this.usuarioRepo.findOne({ where: { idUsuario }, relations: { sucursal: true } });
+    if (!usuario) return null;
     return this.corteRepo.findOne({
-      where: { usuario: { idUsuario }, estatus: 'Abierto' }
+      where: { usuario: { sucursal: { idSucursal: usuario.sucursal?.idSucursal || 1 } }, estatus: 'Abierto' }
     });
   }
 
@@ -678,10 +680,10 @@ export class PosService {
     if (!idSucursal) return []; // Forzar a que siempre reciba una sucursal
 
     return this.corteRepo.find({
-      where: {
-        sucursal: { idSucursal },
-        usuario: { rol: Not('Soporte') }
-      },
+      where: [
+        { sucursal: { idSucursal }, usuario: { rol: Not('Soporte') } },
+        { usuario: { sucursal: { idSucursal }, rol: Not('Soporte') } }
+      ],
       relations: { usuario: { sucursal: { empresa: true } } },
       order: { fechaApertura: 'DESC' }, take: 200
     });
@@ -693,8 +695,9 @@ export class PosService {
     await queryRunner.startTransaction();
 
     try {
+      const u = await queryRunner.manager.findOne(PosUsuario, { where: { idUsuario: payload.idUsuario }, relations: { sucursal: true } });
       const turno = await queryRunner.manager.findOne(PosCorteCaja, { 
-        where: { usuario: { idUsuario: payload.idUsuario }, estatus: 'Abierto' } 
+        where: { usuario: { sucursal: { idSucursal: u?.sucursal?.idSucursal || 1 } }, estatus: 'Abierto' } 
       });
       if (!turno) throw new BadRequestException('El usuario no tiene un turno abierto');
 
@@ -3764,7 +3767,7 @@ export class PosService {
     
     // Obtener turno abierto
     const turno = await this.corteRepo.findOne({
-      where: { usuario: { idUsuario }, estatus: 'Abierto' }
+      where: { usuario: { sucursal: { idSucursal } }, estatus: 'Abierto' }
     });
     
     if (!turno) throw new BadRequestException('No tienes un turno de caja abierto para registrar gastos');
