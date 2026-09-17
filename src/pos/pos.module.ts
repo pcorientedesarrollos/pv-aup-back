@@ -43,6 +43,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       PosUsuario,
       PosCorteCaja,
       PosGasto,
+      PosGastoCategoria,
       PosSucursal,
       PosVenta,
       PosVentaDetalle,
