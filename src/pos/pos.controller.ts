@@ -836,5 +836,14 @@ export class PosController {
   getGastos(@Headers('x-sucursal-id') idSucursal: string) {
     return this.posService.getGastos(Number(idSucursal));
   }
-}
 
+  @Get('gastos/categorias')
+  getCategoriasGastos() {
+    return this.posService.getCategoriasGastos();
+  }
+
+  @Post('gastos/categorias')
+  createCategoriaGasto(@Body() payload: { nombre: string }) {
+    return this.posService.createCategoriaGasto(payload.nombre);
+  }
+}

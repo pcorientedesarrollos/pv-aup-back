@@ -16,6 +16,7 @@ import { PosUsuario } from './entities/pos-usuario.entity';
 import { PosVenta } from './entities/pos-venta.entity';
 import { PosVentaDetalle } from './entities/pos-venta-detalle.entity';
 import { PosGasto } from './entities/pos-gasto.entity';
+import { PosGastoCategoria } from './entities/pos-gasto-categoria.entity';
 import { PosCorteCaja } from './entities/pos-corte-caja.entity';
 import { PosMovimientoInventario } from './entities/pos-movimiento-inventario.entity';
 import { PosEmpresa } from './entities/pos-empresa.entity';
@@ -3762,7 +3763,7 @@ export class PosService {
     return Buffer.from(pdfBytes);
   }
   // --- GASTOS ---
-  async registrarGasto(payload: { concepto: string; monto: number }, idUsuario: number, idSucursal: number) {
+  async registrarGasto(payload: { concepto: string; monto: number; idCategoria?: number; observaciones?: string }, idUsuario: number, idSucursal: number) {
     if (!payload.concepto || !payload.monto) throw new BadRequestException('Concepto y monto son obligatorios');
     
     // Obtener turno abierto
@@ -3775,6 +3776,8 @@ export class PosService {
     const gasto = this.gastoRepo.create({
       concepto: payload.concepto,
       monto: payload.monto,
+      observaciones: payload.observaciones,
+      categoria: payload.idCategoria ? { idCategoria: payload.idCategoria } : null,
       sucursal: { idSucursal },
       usuario: { idUsuario },
       corte: { idCorte: turno.idCorte }
@@ -3795,3 +3798,14 @@ export class PosService {
 }
 
 
+
+  // --- CATEGORIAS DE GASTOS ---
+  async getCategoriasGastos() {
+    return this.gastoCategoriaRepo.find({ where: { estatus: true }, order: { nombre: 'ASC' } });
+  }
+
+  async createCategoriaGasto(nombre: string) {
+    if (!nombre) throw new BadRequestException('El nombre de la categoria es requerido');
+    const cat = this.gastoCategoriaRepo.create({ nombre, estatus: true });
+    return this.gastoCategoriaRepo.save(cat);
+  }

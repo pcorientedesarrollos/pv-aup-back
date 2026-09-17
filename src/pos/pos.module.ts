@@ -19,6 +19,7 @@ import { PosConfiguracion } from './entities/pos-configuracion.entity';
 import { PosEmpresa } from './entities/pos-empresa.entity';
 import { PosFactura } from './entities/pos-factura.entity';
 import { PosGasto } from './entities/pos-gasto.entity';
+import { PosGastoCategoria } from './entities/pos-gasto-categoria.entity';
 import { PosProforma } from './entities/pos-proforma.entity';
 import { PosProveedor } from './entities/pos-proveedor.entity';
 import { PosCompra } from './entities/pos-compra.entity';

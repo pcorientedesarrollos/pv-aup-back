@@ -1,3 +1,4 @@
+import { PosGastoCategoria } from './pos-gasto-categoria.entity';
 ﻿import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { PosSucursal } from './pos-sucursal.entity';
 import { PosUsuario } from './pos-usuario.entity';
@@ -28,4 +29,11 @@ export class PosGasto {
   @ManyToOne(() => PosCorteCaja, { nullable: true })
   @JoinColumn({ name: 'id_corte' })
   corte: PosCorteCaja;
+  @ManyToOne(() => PosGastoCategoria, { nullable: true })
+  @JoinColumn({ name: 'id_categoria' })
+  categoria: PosGastoCategoria;
+
+  @Column({ type: 'text', nullable: true })
+  observaciones: string;
+
 }
