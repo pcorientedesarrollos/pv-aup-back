@@ -624,12 +624,12 @@ export class PosService {
     const totalTransferencia = Number(sumasVentas?.totaltransferencia || sumasVentas?.totalTransferencia || 0);
     const totalCancelado = Number(sumasVentas?.totalcancelado || sumasVentas?.totalCancelado || 0);
     
-    let compras = [];
+    let compras: any[] = [];
     if (corte.fechaApertura) {
       const fechaCierre = corte.fechaCierre || new Date();
       compras = await this.compraRepo.find({
         where: {
-          sucursal: { idSucursal: corte.usuario?.sucursal?.idSucursal || corte.usuario?.idSucursal || 1 },
+          sucursal: { idSucursal: corte.usuario?.sucursal?.idSucursal || 1 },
           fechaCompra: Between(corte.fechaApertura, fechaCierre)
         },
         relations: { proveedor: true },
