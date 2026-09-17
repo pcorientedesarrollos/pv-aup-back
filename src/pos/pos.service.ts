@@ -5,7 +5,7 @@ import { Injectable, BadRequestException, UnauthorizedException, NotFoundExcepti
 import { PDFDocument as PDFLibDocument, rgb, degrees, StandardFonts } from 'pdf-lib';
 import * as bcrypt from 'bcryptjs';
 import { InjectRepository } from '@nestjs/typeorm';
-import {  Repository, DataSource, Not , Like, IsNull, LessThanOrEqual } from 'typeorm';
+import {  Repository, DataSource, Not , Like, IsNull, LessThanOrEqual, Between } from 'typeorm';
 
 import { PosSucursal } from './entities/pos-sucursal.entity';
 import { PosCategoria } from './entities/pos-categoria.entity';
@@ -621,6 +621,20 @@ export class PosService {
     const totalTarjeta = Number(sumasVentas?.totaltarjeta || sumasVentas?.totalTarjeta || 0);
     const totalTransferencia = Number(sumasVentas?.totaltransferencia || sumasVentas?.totalTransferencia || 0);
     const totalCancelado = Number(sumasVentas?.totalcancelado || sumasVentas?.totalCancelado || 0);
+    
+    let compras = [];
+    if (corte.fechaApertura) {
+      const fechaCierre = corte.fechaCierre || new Date();
+      compras = await this.compraRepo.find({
+        where: {
+          sucursal: { idSucursal: corte.usuario?.sucursal?.idSucursal || corte.usuario?.idSucursal || 1 },
+          fechaCompra: Between(corte.fechaApertura, fechaCierre)
+        },
+        relations: { proveedor: true },
+        order: { fechaCompra: 'DESC' }, take: 100
+      });
+    }
+
     const totalGastos = Number(sumasGastos?.totalgastos || sumasGastos?.totalGastos || 0);
 
     const esperado = Number(corte.fondoInicial) + totalEfectivo + totalTarjeta + totalTransferencia - totalGastos;
@@ -630,6 +644,7 @@ export class PosService {
     return {
       corte,
       ventas: ventasList,
+        compras,
       gastos,
       resumen: {
         aperturasCaja: Number(corte.fondoInicial),
