@@ -3788,13 +3788,22 @@ export class PosService {
     return { success: true, mensaje: 'Gasto registrado correctamente' };
   }
 
-  async getGastos(idSucursal: number) {
+  async getGastos(idSucursal: number, desde?: string, hasta?: string) {
     if (!idSucursal) return [];
-    return this.gastoRepo.find({
-      where: { sucursal: { idSucursal } },
-      relations: { usuario: true, corte: true },
-      order: { fecha: 'DESC' }, take: 200
-    });
+    const query = this.gastoRepo.createQueryBuilder('gasto')
+      .leftJoinAndSelect('gasto.usuario', 'usuario')
+      .leftJoinAndSelect('gasto.corte', 'corte')
+      .leftJoinAndSelect('gasto.categoria', 'categoria')
+      .where('gasto.id_sucursal = :idSucursal', { idSucursal });
+
+    if (desde) {
+      query.andWhere('DATE(gasto.fecha) >= :desde', { desde });
+    }
+    if (hasta) {
+      query.andWhere('DATE(gasto.fecha) <= :hasta', { hasta });
+    }
+
+    return query.orderBy('gasto.fecha', 'DESC').take(200).getMany();
   }
 
   // --- CATEGORIAS DE GASTOS ---

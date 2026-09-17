@@ -833,8 +833,12 @@ export class PosController {
   }
 
   @Get('gastos')
-  getGastos(@Headers('x-sucursal-id') idSucursal: string) {
-    return this.posService.getGastos(Number(idSucursal));
+  getGastos(
+    @Headers('x-sucursal-id') idSucursal: string,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string
+  ) {
+    return this.posService.getGastos(Number(idSucursal), desde, hasta);
   }
 
   @Get('gastos/categorias')
