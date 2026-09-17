@@ -1,4 +1,4 @@
-﻿import { calcularCostoPromedioPonderado } from './pos-calculos.helper';
+import { calcularCostoPromedioPonderado } from './pos-calculos.helper';
 import axios from 'axios';
 import AdmZip = require('adm-zip');
 import { Injectable, BadRequestException, UnauthorizedException, NotFoundException, ForbiddenException } from '@nestjs/common';
@@ -610,6 +610,12 @@ export class PosService {
       order: { fecha: 'DESC' }, take: 200
     });
 
+    const ventasList = await this.ventaRepo.find({
+      where: { corte: { idCorte } },
+      relations: { cliente: true },
+      order: { fechaVenta: 'DESC' }
+    });
+
     const totalEfectivo = Number(sumasVentas?.totalefectivo || sumasVentas?.totalEfectivo || 0);
     const totalTarjeta = Number(sumasVentas?.totaltarjeta || sumasVentas?.totalTarjeta || 0);
     const totalTransferencia = Number(sumasVentas?.totaltransferencia || sumasVentas?.totalTransferencia || 0);
@@ -622,6 +628,7 @@ export class PosService {
 
     return {
       corte,
+      ventas: ventasList,
       gastos,
       resumen: {
         aperturasCaja: Number(corte.fondoInicial),
