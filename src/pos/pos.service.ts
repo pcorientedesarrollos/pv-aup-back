@@ -607,13 +607,19 @@ export class PosService {
 
     const sumasGastos = await this.gastoRepo.createQueryBuilder('gasto')
       .select("SUM(gasto.monto)", "totalGastos")
-      .where("gasto.id_corte = :idCorte", { idCorte })
+      .where("gasto.id_sucursal = :idSucursal", { idSucursal: corte.usuario?.sucursal?.idSucursal || corte.sucursal?.idSucursal || 1 })
+      .andWhere("gasto.fecha >= :apertura", { apertura: corte.fechaApertura })
+      .andWhere("gasto.fecha <= :cierre", { cierre: corte.fechaCierre || new Date() })
       .getRawOne();
 
-    const gastos = await this.gastoRepo.find({
-      where: { corte: { idCorte } },
-      order: { fecha: 'DESC' }, take: 200
-    });
+    const gastos = await this.gastoRepo.createQueryBuilder('gasto')
+      .leftJoinAndSelect('gasto.categoria', 'categoria')
+      .where("gasto.id_sucursal = :idSucursal", { idSucursal: corte.usuario?.sucursal?.idSucursal || corte.sucursal?.idSucursal || 1 })
+      .andWhere("gasto.fecha >= :apertura", { apertura: corte.fechaApertura })
+      .andWhere("gasto.fecha <= :cierre", { cierre: corte.fechaCierre || new Date() })
+      .orderBy('gasto.fecha', 'DESC')
+      .limit(200)
+      .getMany();
 
     const ventasList = await this.ventaRepo.find({
       where: { corte: { idCorte } },
@@ -629,14 +635,14 @@ export class PosService {
     let compras: any[] = [];
     if (corte.fechaApertura) {
       const fechaCierre = corte.fechaCierre || new Date();
-      compras = await this.compraRepo.find({
-        where: {
-          sucursal: { idSucursal: corte.usuario?.sucursal?.idSucursal || 1 },
-          fechaCompra: Between(corte.fechaApertura, fechaCierre)
-        },
-        relations: { proveedor: true },
-        order: { fechaCompra: 'DESC' }, take: 100
-      });
+      compras = await this.compraRepo.createQueryBuilder('compra')
+        .leftJoinAndSelect('compra.proveedor', 'proveedor')
+        .where('compra.id_sucursal = :idSucursal', { idSucursal: corte.usuario?.sucursal?.idSucursal || corte.sucursal?.idSucursal || 1 })
+        .andWhere('compra.fecha_compra >= :apertura', { apertura: corte.fechaApertura })
+        .andWhere('compra.fecha_compra <= :cierre', { cierre: fechaCierre })
+        .orderBy('compra.fecha_compra', 'DESC')
+        .limit(100)
+        .getMany();
     }
 
     const totalGastos = Number(sumasGastos?.totalgastos || sumasGastos?.totalGastos || 0);
@@ -3769,7 +3775,8 @@ export class PosService {
     
     // Obtener turno abierto
     const turno = await this.corteRepo.findOne({
-      where: { usuario: { sucursal: { idSucursal } }, estatus: 'Abierto' }
+      where: { usuario: { sucursal: { idSucursal } }, estatus: 'Abierto' },
+      order: { fechaApertura: 'DESC' }
     });
     
     if (!turno) throw new BadRequestException('No tienes un turno de caja abierto para registrar gastos');
