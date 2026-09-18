@@ -997,7 +997,18 @@ export class PosService {
       };
     }
 
-    const emisor = comprobante['cfdi:Emisor'];
+    
+      let factorIvaXml = 1;
+      const impuestosXml = comprobante['cfdi:Impuestos'];
+      if (impuestosXml && impuestosXml['@_TotalImpuestosTrasladados']) {
+        const subTotalXml = Number(comprobante['@_SubTotal'] || 0);
+        const descuentoXml = Number(comprobante['@_Descuento'] || 0);
+        const trasladosXml = Number(impuestosXml['@_TotalImpuestosTrasladados'] || 0);
+        if (subTotalXml > 0 && trasladosXml > 0) {
+           factorIvaXml = 1 + (trasladosXml / (subTotalXml - descuentoXml));
+        }
+      }
+      const emisor = comprobante['cfdi:Emisor'];
     const conceptosRaw = comprobante['cfdi:Conceptos']?.['cfdi:Concepto'];
     if (!conceptosRaw) {
       return {
@@ -1014,7 +1025,7 @@ export class PosService {
       const cantidad = Number(c['@_Cantidad'] || 0);
       const valorUnitario = Number(c['@_ValorUnitario'] || 0);
         const descuento = Number(c['@_Descuento'] || 0);
-        const costoUnitarioReal = cantidad > 0 ? ((valorUnitario * cantidad) - descuento) / cantidad : valorUnitario;
+        const costoUnitarioReal = (cantidad > 0 ? ((valorUnitario * cantidad) - descuento) / cantidad : valorUnitario) * factorIvaXml;
       const noIdentificacion = c['@_NoIdentificacion'] || '';
 
       let productoMatch: any = null;
@@ -2984,6 +2995,9 @@ export class PosService {
 
 
 
+      
+      const hasIva16 = /IVA[\s:]*16%|Tasa[\s:]*0\.160000/i.test(text);
+      const factorIvaPdf = hasIva16 ? 1.16 : 1;
       const rfcs = text.match(/[A-Z&ÃƒÆ’Ã¢â‚¬Ëœ]{3,4}\d{6}[A-V1-9][A-Z1-9][0-9A]/gi) || [];
 
       let rfcEmisor = rfcs && rfcs.length > 0 ? (rfcs[0]?.toUpperCase() || '') : '';
@@ -3063,7 +3077,7 @@ export class PosService {
             const descuentoStr = priceMatch[2] ? priceMatch[2].replace(/,/g, '') : '0';
             const precioBruto = parseFloat(precioStr);
             const descuento = parseFloat(descuentoStr);
-            currentProduct.costoUnitario = currentProduct.cantidad > 0 ? ((precioBruto * currentProduct.cantidad) - descuento) / currentProduct.cantidad : precioBruto;
+            currentProduct.costoUnitario = (currentProduct.cantidad > 0 ? ((precioBruto * currentProduct.cantidad) - descuento) / currentProduct.cantidad : precioBruto) * factorIvaPdf;
             if (currentProduct.cantidad > 0 && currentProduct.costoUnitario > 0) {
               conceptos.push({ ...currentProduct });
             }
