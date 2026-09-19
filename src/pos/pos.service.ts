@@ -2255,41 +2255,45 @@ export class PosService {
         }
       }
 
-      // Mapear RÃƒÆ’Ã‚Â©gimen Fiscal
-      let regimenFiscal = '';
-      if (text.match(/General de Ley Personas Morales/i)) regimenFiscal = '601';
-      else if (text.match(/Personas F[ÃƒÆ’Ã‚Â­i]sicas con Actividades Empresariales/i)) regimenFiscal = '612';
-      else if (text.match(/Incorporaci[ÃƒÆ’Ã‚Â³o]n Fiscal/i)) regimenFiscal = '621';
-      else if (text.match(/Simplificado de Confianza/i)) regimenFiscal = '626';
-      else if (text.match(/Sueldos y Salarios/i)) regimenFiscal = '605';
-      else if (text.match(/Sin obligaciones/i)) regimenFiscal = '616';
+      // Mapear Regimen Fiscal
+        let regimenFiscal = '';
+        if (text.match(/General de Ley Personas Morales/i)) regimenFiscal = '601';
+        else if (text.match(/Personas F(?:í|i|.)sicas con Actividades Empresariales/i)) regimenFiscal = '612';
+        else if (text.match(/Incorporaci(?:ó|o|.)n Fiscal/i)) regimenFiscal = '621';
+        else if (text.match(/Simplificado de Confianza/i)) regimenFiscal = '626';
+        else if (text.match(/Sueldos y Salarios/i)) regimenFiscal = '605';
+        else if (text.match(/Sin obligaciones/i)) regimenFiscal = '616';
 
-      let direccionCompleta = '';
-      const domicilioMatch = text.match(/Datos del domicilio registrado([\s\S]+?)Actividades Econ[ÃƒÆ’Ã‚Â³o]micas/i);
-      if (domicilioMatch) {
-        let dom = domicilioMatch[1].replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ');
-        const getField = (regex: RegExp) => {
-          const m = dom.match(regex);
-          return m ? m[1].trim() : '';
-        };
-        const calle = getField(/(?:Nombre\s*de\s*Vialidad|NombredeVialidad):?([\s\S]*?)(?:N[ÃƒÆ’Ã‚ÂºuÃƒâ€¡Ã‚Â§]?mero)/i);
-        const ext = getField(/(?:N[ÃƒÆ’Ã‚ÂºuÃƒâ€¡Ã‚Â§]?mero\s*Exterior|N[ÃƒÆ’Ã‚ÂºuÃƒâ€¡Ã‚Â§]?meroExterior):?([\s\S]*?)(?:N[ÃƒÆ’Ã‚ÂºuÃƒâ€¡Ã‚Â§]?mero\s*Interior|N[ÃƒÆ’Ã‚ÂºuÃƒâ€¡Ã‚Â§]?meroInterior|Nombre\s*de\s*la\s*Colonia|Nombredela Colonia)/i);
-        const int = getField(/(?:N[ÃƒÆ’Ã‚ÂºuÃƒâ€¡Ã‚Â§]?mero\s*Interior|N[ÃƒÆ’Ã‚ÂºuÃƒâ€¡Ã‚Â§]?meroInterior):?([\s\S]*?)(?:Nombre\s*de\s*la\s*Colonia|Nombredela Colonia)/i);
-        const col = getField(/(?:Nombre\s*de\s*la\s*Colonia|Nombredela Colonia):?([\s\S]*?)(?:Nombre\s*de\s*la\s*Localidad|Nombredela Localidad)/i);
-        const mun = getField(/(?:Municipio\s*o\s*Demarcaci[ÃƒÆ’Ã‚Â³o]n\s*Territorial|Municipioo Demarcaci[ÃƒÆ’Ã‚Â³o]nTerritorial|Municipio\s*o\s*DemarcacinTerritorial):?([\s\S]*?)(?:Nombre\s*de\s*la\s*Entidad|Nombredela Entidad)/i);
-        const est = getField(/(?:Entidad\s*Federativa|EntidadFederativa):?([\s\S]*?)(?:Entre\s*Calle|EntreCalle)/i);
+        let direccionCompleta = '';
+        // "Datos del domicilio registrado" until "Actividades Económicas"
+        const domicilioMatch = text.match(/Datos del domicilio registrado([\s\S]+?)(?:Actividades Econ(?:ó|o|.)micas|Susceptibles de recibir)/i);
+        if (domicilioMatch) {
+          let dom = domicilioMatch[1].replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ');
+          
+          const getField = (regex) => {
+            const m = dom.match(regex);
+            return m ? m[1].trim() : '';
+          };
+          
+          const calle = getField(/(?:Nombre\s*de\s*Vialidad|NombredeVialidad):?\s*([\s\S]*?)(?:N(?:ú|u|.)mero)/i);
+          const ext = getField(/(?:N(?:ú|u|.)mero\s*Exterior|N(?:ú|u|.)meroExterior):?\s*([\s\S]*?)(?:N(?:ú|u|.)mero|Nombre\s*de\s*la\s*Colonia|Nombredela Colonia)/i);
+          const int = getField(/(?:N(?:ú|u|.)mero\s*Interior|N(?:ú|u|.)meroInterior):?\s*([\s\S]*?)(?:Nombre\s*de\s*la\s*Colonia|Nombredela Colonia)/i);
+          const col = getField(/(?:Nombre\s*de\s*la\s*Colonia|Nombredela Colonia):?\s*([\s\S]*?)(?:Nombre\s*de\s*la\s*Localidad|Nombredela Localidad)/i);
+          const mun = getField(/(?:Municipio\s*o\s*Demarcaci(?:ó|o|.)n\s*Territorial|Municipioo Demarcaci(?:ó|o|.)nTerritorial):?\s*([\s\S]*?)(?:Nombre\s*de\s*la\s*Entidad|Nombredela Entidad)/i);
+          const est = getField(/(?:Entidad\s*Federativa|EntidadFederativa):?\s*([\s\S]*?)(?:Entre\s*Calle|EntreCalle|C(?:ó|o|.)digo\s*Postal|CP)/i);
+          
+          const partes: string[] = [];
+          if (calle) partes.push(calle);
+          if (ext && ext !== 'S/N' && ext !== 'SN') partes.push(`Num. Ext. ${ext}`);
+          if (int && int !== 'S/N' && int !== 'SN') partes.push(`Num. Int. ${int}`);
+          if (col) partes.push(`Col. ${col}`);
+          if (mun) partes.push(mun);
+          if (est) partes.push(est);
+          if (cp) partes.push(`CP ${cp}`);
+          
+          direccionCompleta = partes.join(', ').replace(/\s+/g, ' ');
+        }
         
-        const partes: string[] = [];
-        if (calle) partes.push(calle);
-        if (ext && ext !== 'S/N' && ext !== 'SN') partes.push(`Num. Ext. ${ext}`);
-        if (int && int !== 'S/N' && int !== 'SN') partes.push(`Num. Int. ${int}`);
-        if (col) partes.push(`Col. ${col}`);
-        if (mun) partes.push(mun);
-        if (est) partes.push(est);
-        if (cp) partes.push(`CP ${cp}`);
-        
-        direccionCompleta = partes.join(', ').replace(/\s+/g, ' ');
-      }
         let clienteExistente: any = null;
         if (idSucursal && (rfc || nombre)) {
           const conditions: any[] = [];
