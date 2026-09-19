@@ -110,7 +110,7 @@ export class PosService {
 
     if (payload.usuario && payload.usuario.nombreUsuario) {
       if (!payload.usuario.contrasena || payload.usuario.contrasena.length < 6) {
-        throw new BadRequestException('La contraseÃƒÆ’Ã‚Â±a del usuario administrador debe tener al menos 6 caracteres');
+        throw new BadRequestException('La contraseña del usuario administrador debe tener al menos 6 caracteres');
       }
       const nuevoUsuario = this.usuarioRepo.create({
         sucursal: { idSucursal: saved.idSucursal },
@@ -1973,7 +1973,7 @@ export class PosService {
       // Obtener serie y folio de la base de datos si es posible, o usar el ID
       // Como no tenemos folio y serie directo en pos_facturas, asumiremos PUR-3 basado en el requerimiento visual,
       // o extraeremos del UUID si existe. Idealmente, esto vendrÃƒÆ’Ã‚Â­a de un campo en la BD.
-      // Para igualar el formato de tu compaÃƒÆ’Ã‚Â±ero, usaremos el prefijo PUR- y el ID:
+      // Para igualar el formato de tu compañero, usaremos el prefijo PUR- y el ID:
       const serieFolio = `PUR-${factura.idFactura}`;
       
       const fileNamePdf = `Factura-${serieFolio}.pdf`;
@@ -2214,7 +2214,7 @@ export class PosService {
       const rfc = rfcMatch ? rfcMatch[1] : '';
 
       // Extraer CP
-      const cpMatch = text.match(/(?:C[ÃƒÆ’Ã‚Â³o]digo\s*Postal|CP)[\s\S]*?(\d{5})/i);
+      const cpMatch = text.match(/(?:C(?:ó|o|.)digo\s*Postal|CP)[\s\S]*?(\d{5})/i);
       const cp = cpMatch ? cpMatch[1] : '';
 
       let nombre = '';
