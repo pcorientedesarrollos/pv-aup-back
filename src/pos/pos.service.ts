@@ -2217,14 +2217,34 @@ export class PosService {
       const cpMatch = text.match(/(?:C[ÃƒÆ’Ã‚Â³o]digo\s*Postal|CP)[\s\S]*?(\d{5})/i);
       const cp = cpMatch ? cpMatch[1] : '';
 
-      // Extraer DenominaciÃƒÆ’Ã‚Â³n/RazÃƒÆ’Ã‚Â³n Social buscando entre "Registro Federal de Contribuyentes" y "Nombre, denominaciÃƒÆ’Ã‚Â³n o razÃƒÆ’Ã‚Â³n"
       let nombre = '';
-      const denominacionMatch = text.match(/Registro Federal de Contribuyentes\s*([\s\S]+?)\s*(?:Nombre, denominaci[ÃƒÆ’Ã‚Â³o]n o raz[ÃƒÆ’Ã‚Â³o]n|Denominaci[ÃƒÆ’Ã‚Â³o]n\/Raz[ÃƒÆ’Ã‚Â³o]n Social)/i);
+      
+      // Intentar Persona Moral
+      const denominacionMatch = text.match(/(?:Nombre, denominaci(?:ó|o|.)n o raz(?:ó|o|.)n social:|Denominaci(?:ó|o|.)n\/Raz(?:ó|o|.)n Social:)\s*([^\n]+)/i);
       if (denominacionMatch && denominacionMatch[1]) {
-        // Reemplazar saltos de lÃƒÆ’Ã‚Â­nea por espacios para unir nombres separados en varias lÃƒÆ’Ã‚Â­neas
-        nombre = denominacionMatch[1].replace(/[\r\n]+/g, ' ').trim();
+        nombre = denominacionMatch[1].trim();
       }
 
+      // Intentar Persona Física (Nombre(s), Primer Apellido, Segundo Apellido)
+      if (!nombre || nombre.includes("RFC") || nombre.length < 3) {
+         nombre = '';
+         const nMatch = text.match(/Nombre\s*\(s\):\s*([^\n]+)/i);
+         if (nMatch && nMatch[1]) nombre += nMatch[1].trim();
+         
+         const a1Match = text.match(/Primer Apellido:\s*([^\n]+)/i);
+         if (a1Match && a1Match[1]) nombre += ' ' + a1Match[1].trim();
+         
+         const a2Match = text.match(/Segundo Apellido:\s*([^\n]+)/i);
+         if (a2Match && a2Match[1]) nombre += ' ' + a2Match[1].trim();
+         
+         nombre = nombre.trim();
+      }
+      
+      // Fallback si aúb asì captura basura
+      if (nombre.includes("Registro Federal") || !nombre) {
+         nombre = ''; // dejar vacío para que el usuario lo llene
+      }
+      
       // Extraer RÃƒÆ’Ã‚Â©gimen Capital (A veces viene en otra lÃƒÆ’Ã‚Â­nea)
       const regimenCapitalMatch = text.match(/R[ÃƒÆ’Ã‚Â©e]gimen Capital:?\s*([^\n]+)/i);
       if (regimenCapitalMatch && regimenCapitalMatch[1]) {
