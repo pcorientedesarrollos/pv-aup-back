@@ -272,9 +272,10 @@ export class PosService {
   }
 
   async actualizarProductoCompleto(id: number, data: {
-    nombre?: string;
-    codigoBarras?: string;
-    precioUnitario?: number;
+      nombre?: string;
+      codigoBarras?: string;
+      idCategoria?: number | null;
+      precioUnitario?: number;
     precioPublico?: number;
     precioCompra?: number;
     utilidad?: number;
