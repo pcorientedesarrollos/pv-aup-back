@@ -3865,4 +3865,5 @@ export class PosService {
     return this.gastoCategoriaRepo.save(cat);
   }
 
+
 }

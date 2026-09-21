@@ -1,52 +1,51 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PosCliente } from '../pos/entities/pos-cliente.entity';
 import { PosVenta } from '../pos/entities/pos-venta.entity';
 import { PosVentaDetalle } from '../pos/entities/pos-venta-detalle.entity';
+import { PosProducto } from '../pos/entities/pos-producto.entity';
 
 @Injectable()
 export class DashboardService {
   constructor(
     @InjectRepository(PosCliente) private clienteRepo: Repository<PosCliente>,
     @InjectRepository(PosVenta) private ventaRepo: Repository<PosVenta>,
-    @InjectRepository(PosVentaDetalle) private ventaDetalleRepo: Repository<PosVentaDetalle>
+    @InjectRepository(PosVentaDetalle) private ventaDetalleRepo: Repository<PosVentaDetalle>,
+    @InjectRepository(PosProducto) private productoRepo: Repository<PosProducto>
   ) {}
 
   async getResumen() {
     try {
-      const totalClientes = await this.clienteRepo.count();
-
       const hoy = new Date();
       const tzOffset = hoy.getTimezoneOffset() * 60000;
       const localDate = new Date(hoy.getTime() - tzOffset);
       const fechaStr = localDate.toISOString().slice(0, 10);
 
-      // Ventas de hoy sumando el total_pagado de PosVenta
-      const resultVentasHoy = await this.ventaRepo.createQueryBuilder('venta')
+      // --- 1. VENTAS HOY ---
+      const ventasHoyResult = await this.ventaRepo.createQueryBuilder('venta')
         .where('DATE(venta.fecha_venta) = :fechaStr', { fechaStr })
         .andWhere("venta.estatus = 'Completada'")
         .select('SUM(venta.total_pagado)', 'total')
+        .addSelect('COUNT(venta.id_venta)', 'tickets')
         .getRawOne();
         
-      const ventasHoy = resultVentasHoy?.total ? Number(resultVentasHoy.total) : 0;
+      const ventasHoy = Number(ventasHoyResult?.total || 0);
+      const ticketsHoy = Number(ventasHoyResult?.tickets || 0);
 
-      // Movimientos hoy (conteo de items vendidos hoy)
-      const resultMovimientosHoy = await this.ventaDetalleRepo.createQueryBuilder('detalle')
-        .innerJoin('detalle.venta', 'venta')
+      // --- 2. DEVOLUCIONES HOY ---
+      const devolucionesHoyResult = await this.ventaRepo.createQueryBuilder('venta')
         .where('DATE(venta.fecha_venta) = :fechaStr', { fechaStr })
-        .andWhere("venta.estatus = 'Completada'")
-        .getCount();
+        .andWhere("venta.estatus = 'Cancelada'")
+        .select('SUM(venta.total_pagado)', 'total')
+        .addSelect('COUNT(venta.id_venta)', 'tickets')
+        .getRawOne();
+      
+      const devolucionesHoy = Number(devolucionesHoyResult?.total || 0);
+      const ticketsDevolucionesHoy = Number(devolucionesHoyResult?.tickets || 0);
 
-      // ltimos movimientos
-      const ultimosMovimientos = await this.ventaDetalleRepo.find({
-        order: { idDetalle: 'DESC' },
-        take: 5,
-        relations: { producto: true, venta: true }
-      });
-
-      // Ventas semanales (Lunes a Domingo de la semana actual)
-      const dayOfWeek = localDate.getDay() || 7; // 1 (Lunes) a 7 (Domingo)
+      // --- 3. ESTA SEMANA ---
+      const dayOfWeek = localDate.getDay() || 7; 
       const monday = new Date(localDate);
       monday.setDate(localDate.getDate() - dayOfWeek + 1);
       const sunday = new Date(monday);
@@ -55,6 +54,17 @@ export class DashboardService {
       const mondayStr = monday.toISOString().slice(0, 10);
       const sundayStr = sunday.toISOString().slice(0, 10);
 
+      const ventasSemanalesTotales = await this.ventaRepo.createQueryBuilder('venta')
+        .where('DATE(venta.fecha_venta) BETWEEN :mondayStr AND :sundayStr', { mondayStr, sundayStr })
+        .andWhere("venta.estatus = 'Completada'")
+        .select('SUM(venta.total_pagado)', 'total')
+        .addSelect('COUNT(venta.id_venta)', 'tickets')
+        .getRawOne();
+
+      const ventasSemanaTotal = Number(ventasSemanalesTotales?.total || 0);
+      const ticketsSemana = Number(ventasSemanalesTotales?.tickets || 0);
+
+      // (Data para la gráfica de la semana)
       const ventasSemanalesResult = await this.ventaRepo.createQueryBuilder('venta')
         .where('DATE(venta.fecha_venta) BETWEEN :mondayStr AND :sundayStr', { mondayStr, sundayStr })
         .andWhere("venta.estatus = 'Completada'")
@@ -70,9 +80,31 @@ export class DashboardService {
         ventasSemana[dia - 1] = Number(v.total);
       }
 
-      // Top 5 productos ms vendidos del mes
+      // --- 4. ESTE MES ---
       const startOfMonth = new Date(localDate.getFullYear(), localDate.getMonth(), 1).toISOString().slice(0, 10);
       const endOfMonth = new Date(localDate.getFullYear(), localDate.getMonth() + 1, 0).toISOString().slice(0, 10);
+
+      const ventasMesTotales = await this.ventaRepo.createQueryBuilder('venta')
+        .where('DATE(venta.fecha_venta) BETWEEN :startOfMonth AND :endOfMonth', { startOfMonth, endOfMonth })
+        .andWhere("venta.estatus = 'Completada'")
+        .select('SUM(venta.total_pagado)', 'total')
+        .addSelect('COUNT(venta.id_venta)', 'tickets')
+        .getRawOne();
+
+      const ventasMes = Number(ventasMesTotales?.total || 0);
+      const ticketsMes = Number(ventasMesTotales?.tickets || 0);
+
+      // --- 5. SIN STOCK ---
+      const sinStock = await this.productoRepo.createQueryBuilder('producto')
+        .where('producto.stock <= 0')
+        .getCount();
+
+      // --- EXTRAS (Movimientos, etc) ---
+      const ultimosMovimientos = await this.ventaDetalleRepo.find({
+        order: { idDetalle: 'DESC' },
+        take: 5,
+        relations: { producto: true, venta: true }
+      });
 
       const topProductos = await this.ventaDetalleRepo.createQueryBuilder('detalle')
         .innerJoin('detalle.venta', 'venta')
@@ -88,16 +120,23 @@ export class DashboardService {
 
       return {
         ventasHoy,
-        totalClientes,
-        movimientosHoy: resultMovimientosHoy,
+        ticketsHoy,
+        devolucionesHoy,
+        ticketsDevolucionesHoy,
+        ventasSemanaTotal,
+        ticketsSemana,
+        ventasMes,
+        ticketsMes,
+        sinStock,
+        ventasSemana, // para grafica
         ultimosMovimientos: ultimosMovimientos.map(m => ({
           idDetalle: m.idDetalle,
           concepto: m.producto?.nombre || 'Producto Desconocido',
           cantidad: m.cantidad,
           precio: m.precioUnitario,
-          importe: m.subtotal
+          importe: m.subtotal,
+          movimiento: m.venta?.estatus === 'Cancelada' ? 'SALIDA' : 'ENTRADA'
         })),
-        ventasSemana,
         topProductos
       };
     } catch (error) {

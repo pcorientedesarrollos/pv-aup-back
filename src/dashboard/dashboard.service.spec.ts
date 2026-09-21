@@ -4,6 +4,7 @@ import { DashboardService } from './dashboard.service';
 import { PosCliente } from '../pos/entities/pos-cliente.entity';
 import { PosVenta } from '../pos/entities/pos-venta.entity';
 import { PosVentaDetalle } from '../pos/entities/pos-venta-detalle.entity';
+import { PosProducto } from '../pos/entities/pos-producto.entity';
 
 describe('DashboardService', () => {
   let service: DashboardService;
@@ -34,6 +35,7 @@ describe('DashboardService', () => {
         { provide: getRepositoryToken(PosCliente), useValue: makeRepoMock() },
         { provide: getRepositoryToken(PosVenta), useValue: makeRepoMock() },
         { provide: getRepositoryToken(PosVentaDetalle), useValue: makeRepoMock() },
+        { provide: getRepositoryToken(PosProducto), useValue: makeRepoMock() },
       ],
     }).compile();
 
