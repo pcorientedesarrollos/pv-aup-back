@@ -265,7 +265,8 @@ export class PosService {
     return prod;
   }
 
-  async actualizarProducto(id: number, data: { codigoBarras?: string; imagenUrl?: string }) {
+  async actualizarProducto(id: number, data: { codigoBarras?: string;
+    idCategoria?: number | null; imagenUrl?: string }) {
     await this.productoRepo.update(id, data);
     return this.productoRepo.findOne({ where: { idProducto: id }, relations: { categoria: true } });
   }
@@ -321,6 +322,7 @@ export class PosService {
     const updates: any = {};
     if (data.nombre !== undefined) updates.nombre = data.nombre;
     if (data.codigoBarras !== undefined) updates.codigoBarras = data.codigoBarras;
+    if (data.idCategoria !== undefined) updates.categoria = data.idCategoria ? { idCategoria: data.idCategoria } : null;
     if (data.tipoArticulo !== undefined) updates.tipoArticulo = data.tipoArticulo;
     if (data.unidadMedida !== undefined) updates.unidadMedida = data.unidadMedida;
     if (data.precioUnitario !== undefined) updates.precioUnitario = data.precioUnitario;
