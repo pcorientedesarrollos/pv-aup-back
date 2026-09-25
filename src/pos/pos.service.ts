@@ -316,7 +316,7 @@ export class PosService {
         const dupCodigo = await this.productoRepo.findOne({
           where: { sucursal: { idSucursal }, codigoBarras: data.codigoBarras, idProducto: Not(id) }
         });
-        if (dupCodigo) throw new BadRequestException(`Ya existe otro producto con el cÃƒÆ’Ã‚Â³digo de barras "${data.codigoBarras}" en esta sucursal.`);
+        if (dupCodigo) throw new BadRequestException(`Ya existe otro producto con el código de barras "${data.codigoBarras}" en esta sucursal.`);
       }
     }
 
@@ -375,14 +375,14 @@ export class PosService {
     if (p.sucursal) {
       // Is it main code of another product?
       const mainDup = await this.productoRepo.findOne({ where: { sucursal: { idSucursal: p.sucursal.idSucursal }, codigoBarras } });
-      if (mainDup) throw new BadRequestException(`El cÃƒÆ’Ã‚Â³digo "${codigoBarras}" ya es el principal de otro producto en esta sucursal.`);
+      if (mainDup) throw new BadRequestException(`El código "${codigoBarras}" ya es el principal de otro producto en esta sucursal.`);
       
       // Is it alias of another product?
       const aliasDup = await this.productoCodigoRepo.findOne({ 
         where: { codigoBarras, producto: { sucursal: { idSucursal: p.sucursal.idSucursal } } },
         relations: { producto: true }
       });
-      if (aliasDup) throw new BadRequestException(`El cÃƒÆ’Ã‚Â³digo "${codigoBarras}" ya estÃƒÆ’Ã‚Â¡ asignado a otro producto en esta sucursal.`);
+      if (aliasDup) throw new BadRequestException(`El código "${codigoBarras}" ya estÃƒÆ’Ã‚Â¡ asignado a otro producto en esta sucursal.`);
     }
 
     const nuevo = this.productoCodigoRepo.create({ codigoBarras, producto: { idProducto } });
@@ -1282,7 +1282,7 @@ export class PosService {
         const dupCodigo = await this.productoRepo.findOne({
           where: { sucursal: { idSucursal: data.idSucursal }, codigoBarras: data.codigoBarras }
         });
-        if (dupCodigo) throw new BadRequestException(`Ya existe otro producto con el cÃƒÆ’Ã‚Â³digo de barras "${data.codigoBarras}" en esta sucursal.`);
+        if (dupCodigo) throw new BadRequestException(`Ya existe otro producto con el código de barras "${data.codigoBarras}" en esta sucursal.`);
       }
     }
 
@@ -2098,7 +2098,7 @@ export class PosService {
       doc.moveDown();
 
       // Table Header
-      doc.fontSize(10).text('Cant', 50, doc.y, { continued: true });
+      drawText('CÓDIGO', 50, timesRomanBoldFont, 10);
       doc.text('DescripciÃƒÆ’Ã‚Â³n', 100, doc.y, { continued: true });
       doc.text('P.U.', 400, doc.y, { continued: true });
       doc.text('Importe', 470, doc.y);
@@ -3297,7 +3297,7 @@ export class PosService {
         if (errorMsg.includes('Duplicate entry')) {
           const match = errorMsg.match(/Duplicate entry '(.*?)'/);
           const val = match ? match[1] : '';
-          errorMsg = `El cÃƒÆ’Ã‚Â³digo de barras o clave '${val}' ya existe en el inventario.`;
+          errorMsg = `El código de barras o clave '${val}' ya existe en el inventario.`;
         }
         errores.push({ fila: numFila, error: errorMsg });
       }
@@ -3653,7 +3653,7 @@ export class PosService {
           throw new BadRequestException(`Stock insuficiente en sucursal origen para: ${prodOrigen.nombre} (Stock: ${stockActual}, Requerido: ${cantidadTraspaso})`);
         }
 
-        // 2. Buscar equivalente en destino por cÃƒÆ’Ã‚Â³digo de barras
+        // 2. Buscar equivalente en destino por código de barras
         let prodDestino = await queryRunner.manager.findOne(PosProducto, {
           where: { 
             codigoBarras: prodOrigen.codigoBarras,
@@ -3780,7 +3780,7 @@ export class PosService {
     yOffset -= 20;
 
     // Table Header
-    drawText('CÃƒÆ’Ã¢â‚¬Å“DIGO', 50, timesRomanBoldFont, 10);
+      drawText('CÓDIGO', 50, timesRomanBoldFont, 10);
     yOffset += 15;
     drawText('PRODUCTO', 150, timesRomanBoldFont, 10);
     yOffset += 15;
