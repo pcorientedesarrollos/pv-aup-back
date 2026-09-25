@@ -2098,8 +2098,8 @@ export class PosService {
       doc.moveDown();
 
       // Table Header
-      drawText('CÓDIGO', 50, timesRomanBoldFont, 10);
-      doc.text('DescripciÃƒÆ’Ã‚Â³n', 100, doc.y, { continued: true });
+      doc.fontSize(10).text('Cant', 50, doc.y, { continued: true });
+      doc.text('Descripción', 100, doc.y, { continued: true });
       doc.text('P.U.', 400, doc.y, { continued: true });
       doc.text('Importe', 470, doc.y);
       doc.moveTo(50, doc.y + 5).lineTo(550, doc.y + 5).stroke();
