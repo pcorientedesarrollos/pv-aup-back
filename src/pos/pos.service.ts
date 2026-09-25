@@ -2783,7 +2783,7 @@ export class PosService {
       where: { idCotizacion },
       relations: { detalles: { producto: true }, cliente: true, usuario: true, sucursal: true }
     });
-    if (!cotizacion) throw new NotFoundException('CotizaciÃƒÆ’Ã‚Â³n no encontrada');
+    if (!cotizacion) throw new NotFoundException('Cotización no encontrada');
     return cotizacion;
   }
 
@@ -2851,7 +2851,7 @@ export class PosService {
       });
 
       if (!cotizacion) {
-        throw new NotFoundException('Cotizacin no encontrada.');
+        throw new NotFoundException('Cotización no encontrada.');
       }
 
       // Update basic fields
@@ -2918,7 +2918,7 @@ export class PosService {
   async cambiarEstatusCotizacion(idCotizacion: number, estatus: string, idSucursal?: number, rol?: string) {
     const cotizacion = await this.getCotizacionById(idCotizacion);
     if (idSucursal && rol !== 'Administrador' && rol !== 'Soporte') {
-      if (cotizacion.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para modificar esta cotizaciÃƒÆ’Ã‚Â³n');
+      if (cotizacion.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para modificar esta cotización');
     }
     cotizacion.estatus = estatus;
     return this.cotizacionRepo.save(cotizacion);
@@ -2927,7 +2927,7 @@ export class PosService {
   async eliminarCotizacion(idCotizacion: number, idSucursal?: number, rol?: string) {
     const cotizacion = await this.getCotizacionById(idCotizacion);
     if (idSucursal && rol !== 'Administrador' && rol !== 'Soporte') {
-      if (cotizacion.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para eliminar esta cotizaciÃƒÆ’Ã‚Â³n');
+      if (cotizacion.sucursal?.idSucursal !== idSucursal) throw new ForbiddenException('No tienes permiso para eliminar esta cotización');
     }
     return this.cotizacionRepo.remove(cotizacion);
   }
@@ -2959,7 +2959,7 @@ export class PosService {
       if (d.producto) {
         const mov = new PosMovimientoInventario();
         mov.tipoMovimiento = 'SALIDA';
-        mov.referencia = `ConversiÃƒÆ’Ã‚Â³n de CotizaciÃƒÆ’Ã‚Â³n ${cotizacion.folio}`;
+        mov.referencia = `Conversión de Cotización ${cotizacion.folio}`;
         mov.cantidad = d.cantidad;
         mov.producto = d.producto;
         mov.sucursal = cotizacion.sucursal;
