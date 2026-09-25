@@ -3803,7 +3803,7 @@ export class PosService {
     page.drawLine({ start: { x: 100, y: yOffset }, end: { x: 250, y: yOffset }, thickness: 1, color: rgb(0,0,0) });
     page.drawLine({ start: { x: 350, y: yOffset }, end: { x: 500, y: yOffset }, thickness: 1, color: rgb(0,0,0) });
     yOffset -= 15;
-    drawText('Firma de EnvÃƒÆ’Ã‚Â­o', 120, timesRomanFont, 10);
+    drawText('Firma de Envío', 120, timesRomanFont, 10);
     yOffset += 15;
     drawText('Firma de Recibido', 370, timesRomanFont, 10);
 
