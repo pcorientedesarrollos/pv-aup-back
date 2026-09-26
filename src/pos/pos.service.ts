@@ -680,10 +680,29 @@ export class PosService {
       estatus: 'Cerrado'
     });
 
+    const efectivoEsperado = Number(corteData.resumen.aperturasCaja || 0)
+      + Number(corteData.resumen.totalEfectivo || 0)
+      - Number(corteData.resumen.totalGastos || 0);
+    const diferencia = Math.abs(efectivoEscaner - efectivoEsperado);
+
+    if (diferencia > 500) {
+      return {
+        success: true,
+        advertencia: true,
+        diferencia,
+        efectivoEsperado,
+        efectivoDeclarado: efectivoEscaner,
+        mensaje: `Diferencia de ${diferencia.toFixed(2)} detectada. Verifique el conteo de efectivo.`
+      };
+    }
+
     return {
       success: true,
-      mensaje: 'Corte realizado con ÃƒÆ’Ã‚Â©xito',
-      diferencia: efectivoEscaner - corteData.resumen.totalIngresos
+      advertencia: false,
+      diferencia,
+      efectivoEsperado,
+      efectivoDeclarado: efectivoEscaner,
+      mensaje: 'Corte realizado con éxito'
     };
   }
 
@@ -708,9 +727,9 @@ export class PosService {
     try {
       const u = await queryRunner.manager.findOne(PosUsuario, { where: { idUsuario: payload.idUsuario }, relations: { sucursal: true } });
       const turno = await queryRunner.manager.findOne(PosCorteCaja, { 
-        where: { usuario: { sucursal: { idSucursal: u?.sucursal?.idSucursal || 1 } }, estatus: 'Abierto' } 
+        where: { usuario: { idUsuario: payload.idUsuario }, estatus: 'Abierto' } 
       });
-      if (!turno) throw new BadRequestException('El usuario no tiene un turno abierto');
+      if (!turno) throw new BadRequestException('No hay un turno de caja abierto. Por favor abre tu turno antes de realizar una venta.');
 
       const usuario = await queryRunner.manager.findOne(PosUsuario, { 
         where: { idUsuario: payload.idUsuario },
