@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
+﻿import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
 import { PosSucursal } from './pos-sucursal.entity';
 import { PosCategoria } from './pos-categoria.entity';
 import { PosProductoCodigo } from './pos-producto-codigo.entity';
@@ -17,6 +17,9 @@ export class PosProducto {
 
   @Column({ type: 'text', nullable: true })
   descripcion: string;
+
+  @Column({ type: 'text', nullable: true })
+  aliasBusqueda: string;
 
   @Column('decimal', { name: 'precio_unitario', precision: 10, scale: 2, default: 0.00 })
   precioUnitario: number;

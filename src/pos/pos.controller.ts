@@ -783,11 +783,11 @@ export class PosController {
   producirArticulo(
     @Headers('x-sucursal-id') idSucursal: string,
     @Headers('x-usuario-id') idUsuario: string,
-    @Body() payload: { idProducto?: number; cantidad?: number; idProductoTerminado?: number; cantidadProducir?: number }
+    @Body() payload: { idProducto?: number; cantidad?: number; idProductoTerminado?: number; cantidadProducir?: number; ingredientesEditados?: any[] }
   ) {
     const pId = payload.idProducto ?? payload.idProductoTerminado;
     const pCant = payload.cantidad ?? payload.cantidadProducir;
-    return this.posService.producirArticulo(Number(idSucursal), Number(pId), Number(pCant), Number(idUsuario));
+    return this.posService.producirArticulo(Number(idSucursal), Number(pId), Number(pCant), Number(idUsuario), payload.ingredientesEditados);
   }
 
   // --- TRASPASOS DE INVENTARIO ---
@@ -844,6 +844,11 @@ export class PosController {
   @Get('gastos/categorias')
   getCategoriasGastos() {
     return this.posService.getCategoriasGastos();
+  }
+
+  @Post('productos/:id/alias')
+  agregarAliasAProducto(@Param('id') id: string, @Body() payload: { alias: string }) {
+    return this.posService.agregarAliasAProducto(Number(id), payload.alias);
   }
 
   @Post('gastos/categorias')

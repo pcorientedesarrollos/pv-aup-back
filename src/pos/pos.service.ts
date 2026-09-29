@@ -1,4 +1,4 @@
-import { calcularCostoPromedioPonderado } from './pos-calculos.helper';
+﻿import { calcularCostoPromedioPonderado } from './pos-calculos.helper';
 import axios from 'axios';
 import AdmZip = require('adm-zip');
 import { Injectable, BadRequestException, UnauthorizedException, NotFoundException, ForbiddenException } from '@nestjs/common';
@@ -216,7 +216,8 @@ export class PosService {
         whereCondition = [
           { ...where, nombre: Like(`%${search}%`) },
           { ...where, codigoBarras: Like(`%${search}%`) },
-          { ...where, claveProdServ: Like(`%${search}%`) }
+          { ...where, claveProdServ: Like(`%${search}%`) },
+          { ...where, aliasBusqueda: Like(`%${search}%`) }
         ];
         
         // Si el tÃƒÆ’Ã‚Â©rmino de bÃƒÆ’Ã‚Âºsqueda es numÃƒÆ’Ã‚Â©rico, buscar tambiÃƒÆ’Ã‚Â©n por ID
@@ -3523,7 +3524,7 @@ export class PosService {
     }
   }
 
-  async producirArticulo(idSucursal: number, idProducto: number, cantidad: number, idUsuario: number) {
+  async producirArticulo(idSucursal: number, idProducto: number, cantidad: number, idUsuario: number, ingredientesEditados?: any[]) {
     const parseNumber = (val: any) => {
       if (val === null || val === undefined) return 0;
       if (typeof val === 'string') val = val.replace(/,/g, '');
@@ -3556,7 +3557,9 @@ export class PosService {
       // 1. Descontar ingredientes (hijos)
       for (const item of receta) {
         if (!item.productoHijo && !(item as any).id_producto_hijo) continue;
-        const cantRequerida = parseNumber(item.cantidad) * cantidadNum;
+        const hijoIdForEdit = item.productoHijo?.idProducto || (item as any).id_producto_hijo || (typeof item.productoHijo === "number" ? item.productoHijo : null);
+        const editado = ingredientesEditados?.find(e => e.idProducto === hijoIdForEdit);
+        const cantRequerida = editado && editado.cantidadDescontar !== undefined ? parseNumber(editado.cantidadDescontar) : parseNumber(item.cantidad) * cantidadNum;
         
         // Sometimes TypeORM returns the relation as a number or doesn't map idProducto properly
         const hijoId = item.productoHijo?.idProducto || (item as any).id_producto_hijo || (typeof item.productoHijo === 'number' ? item.productoHijo : null);
@@ -3770,7 +3773,7 @@ export class PosService {
       relations: { sucursalOrigen: true, sucursalDestino: true, usuario: true, detalles: { producto: true } }
     });
 
-    if (!traspaso) throw new NotFoundException('Traspaso no encontrado');
+    if (!traspaso) throw new NotFoundException("Traspaso no encontrado");
 
     const pdfDoc = await PDFLibDocument.create();
     let page = pdfDoc.addPage([612, 792]);
@@ -3778,58 +3781,94 @@ export class PosService {
     const timesRomanFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const timesRomanBoldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     
-    let yOffset = height - 50;
+    let yOffset = height - 60;
     
-    const drawText = (text: string, x: number, font: any, size: number) => {
-      page.drawText(text, { x, y: yOffset, size, font, color: rgb(0, 0, 0) });
-      yOffset -= (size + 5);
+    // Helper to draw text
+    const printText = (text: string, x: number, y: number, font: any, size: number, color = rgb(0,0,0)) => {
+      page.drawText(text, { x, y, size, font, color });
     };
 
-    drawText('Reporte de Traspaso de Inventario', 50, timesRomanBoldFont, 16);
-    yOffset -= 10;
-
-    drawText(`Folio: ${traspaso.folio}`, 50, timesRomanFont, 12);
-    drawText(`Fecha: ${new Date(traspaso.fecha).toLocaleString()}`, 50, timesRomanFont, 12);
-    drawText(`Registrado por: ${traspaso.usuario?.nombreCompleto || 'N/A'}`, 50, timesRomanFont, 12);
-    drawText(`Estado: ${traspaso.estatus}`, 50, timesRomanFont, 12);
-    yOffset -= 10;
-
-    drawText(`Sucursal Origen: ${traspaso.sucursalOrigen?.nombre || 'N/A'}`, 50, timesRomanBoldFont, 12);
-    drawText(`Sucursal Destino: ${traspaso.sucursalDestino?.nombre || 'N/A'}`, 50, timesRomanBoldFont, 12);
-    yOffset -= 20;
-
-    // Table Header
-      drawText('CÓDIGO', 50, timesRomanBoldFont, 10);
-    yOffset += 15;
-    drawText('PRODUCTO', 150, timesRomanBoldFont, 10);
-    yOffset += 15;
-    drawText('CANTIDAD', 450, timesRomanBoldFont, 10);
-    yOffset -= 5;
+    // Header Background
+    page.drawRectangle({ x: 40, y: yOffset - 10, width: 532, height: 40, color: rgb(0.9, 0.9, 0.95) });
+    printText("COMPROBANTE DE TRASPASO DE INVENTARIO", 50, yOffset + 5, timesRomanBoldFont, 16, rgb(0.1, 0.2, 0.5));
     
-    page.drawLine({ start: { x: 50, y: yOffset }, end: { x: 550, y: yOffset }, thickness: 1, color: rgb(0,0,0) });
-    yOffset -= 15;
+    yOffset -= 30;
+    printText(`FOLIO: ${traspaso.folio}`, 50, yOffset, timesRomanBoldFont, 12);
+    printText(`FECHA: ${new Date(traspaso.fecha).toLocaleString()}`, 350, yOffset, timesRomanFont, 10);
+    
+    yOffset -= 20;
+    printText(`Generado por: ${traspaso.usuario?.nombreCompleto || "Sistema"}`, 50, yOffset, timesRomanFont, 10);
+    printText(`Estado: ${traspaso.estatus.toUpperCase()}`, 350, yOffset, timesRomanBoldFont, 10, traspaso.estatus === "Completado" ? rgb(0, 0.5, 0) : rgb(0.8, 0.4, 0));
+    
+    yOffset -= 30;
+    // Box for Origin and Destination
+    page.drawRectangle({ x: 40, y: yOffset - 35, width: 250, height: 45, borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 1 });
+    page.drawRectangle({ x: 322, y: yOffset - 35, width: 250, height: 45, borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 1 });
+    
+    printText("ORIGEN:", 50, yOffset - 5, timesRomanBoldFont, 10);
+    printText(traspaso.sucursalOrigen?.nombre || "N/A", 50, yOffset - 20, timesRomanFont, 10);
+
+    printText("DESTINO:", 332, yOffset - 5, timesRomanBoldFont, 10);
+    printText(traspaso.sucursalDestino?.nombre || "N/A", 332, yOffset - 20, timesRomanFont, 10);
+
+    yOffset -= 60;
+    
+    // Table Header
+    page.drawRectangle({ x: 40, y: yOffset - 15, width: 532, height: 20, color: rgb(0.2, 0.2, 0.2) });
+    printText("CÓDIGO", 45, yOffset - 10, timesRomanBoldFont, 10, rgb(1,1,1));
+    printText("PRODUCTO", 130, yOffset - 10, timesRomanBoldFont, 10, rgb(1,1,1));
+    printText("CANT.", 340, yOffset - 10, timesRomanBoldFont, 10, rgb(1,1,1));
+    printText("P. UNIT.", 410, yOffset - 10, timesRomanBoldFont, 10, rgb(1,1,1));
+    printText("SUBTOTAL", 500, yOffset - 10, timesRomanBoldFont, 10, rgb(1,1,1));
+    
+    yOffset -= 35;
+
+    let totalGlobal = 0;
 
     for (const detalle of traspaso.detalles) {
-      drawText(detalle.producto?.codigoBarras || 'N/A', 50, timesRomanFont, 10);
-      yOffset += 15;
-      drawText(detalle.producto?.nombre || 'N/A', 150, timesRomanFont, 10);
-      yOffset += 15;
-      drawText(String(detalle.cantidad), 450, timesRomanFont, 10);
-      yOffset -= 5;
+      if (yOffset < 100) {
+        page = pdfDoc.addPage([612, 792]);
+        yOffset = height - 50;
+      }
+      const nombre = detalle.producto?.nombre || "Desconocido";
+      const precio = Number(detalle.producto?.precioCompra || 0);
+      const subtotal = precio * detalle.cantidad;
+      totalGlobal += subtotal;
+
+      printText(detalle.producto?.codigoBarras || "N/A", 45, yOffset, timesRomanFont, 9);
+      printText(nombre.substring(0, 35), 130, yOffset, timesRomanFont, 9);
+      printText(String(detalle.cantidad), 345, yOffset, timesRomanFont, 9);
+      printText("$" + precio.toFixed(2), 410, yOffset, timesRomanFont, 9);
+      printText("$" + subtotal.toFixed(2), 500, yOffset, timesRomanFont, 9);
+      
+      yOffset -= 15;
+      page.drawLine({ start: { x: 40, y: yOffset + 10 }, end: { x: 572, y: yOffset + 10 }, thickness: 0.5, color: rgb(0.9,0.9,0.9) });
     }
     
-    yOffset -= 50;
-    page.drawLine({ start: { x: 100, y: yOffset }, end: { x: 250, y: yOffset }, thickness: 1, color: rgb(0,0,0) });
-    page.drawLine({ start: { x: 350, y: yOffset }, end: { x: 500, y: yOffset }, thickness: 1, color: rgb(0,0,0) });
     yOffset -= 15;
-    drawText('Firma de Envío', 120, timesRomanFont, 10);
-    yOffset += 15;
-    drawText('Firma de Recibido', 370, timesRomanFont, 10);
+    
+    // Totales
+    if (traspaso.tipoTraspaso === "ConCosto" || totalGlobal > 0) {
+        page.drawRectangle({ x: 400, y: yOffset - 15, width: 172, height: 25, color: rgb(0.95, 0.95, 0.95) });
+        printText("TOTAL:", 410, yOffset - 5, timesRomanBoldFont, 11);
+        printText("$" + totalGlobal.toFixed(2), 500, yOffset - 5, timesRomanBoldFont, 11, rgb(0.8, 0.1, 0.1));
+    }
+
+    yOffset -= 80;
+    if (yOffset < 50) {
+       page = pdfDoc.addPage([612, 792]);
+       yOffset = height - 100;
+    }
+
+    page.drawLine({ start: { x: 80, y: yOffset }, end: { x: 250, y: yOffset }, thickness: 1, color: rgb(0,0,0) });
+    page.drawLine({ start: { x: 360, y: yOffset }, end: { x: 530, y: yOffset }, thickness: 1, color: rgb(0,0,0) });
+    yOffset -= 15;
+    printText("Firma de Envío", 130, yOffset, timesRomanFont, 10);
+    printText("Firma de Recibido", 410, yOffset, timesRomanFont, 10);
 
     const pdfBytes = await pdfDoc.save();
     return Buffer.from(pdfBytes);
   }
-  // --- GASTOS ---
   async registrarGasto(payload: { concepto: string; monto: number; idCategoria?: number; observaciones?: string }, idUsuario: number, idSucursal: number) {
     if (!payload.concepto || !payload.monto) throw new BadRequestException('Concepto y monto son obligatorios');
     
@@ -3876,6 +3915,18 @@ export class PosService {
   // --- CATEGORIAS DE GASTOS ---
   async getCategoriasGastos() {
     return this.gastoCategoriaRepo.find({ where: { estatus: true }, order: { nombre: 'ASC' } });
+  }
+
+  async agregarAliasAProducto(idProducto: number, nuevoAlias: string) {
+    const prod = await this.productoRepo.findOne({ where: { idProducto } });
+    if (!prod) return;
+    const currentAliases = prod.aliasBusqueda ? prod.aliasBusqueda.split(",") : [];
+    if (!currentAliases.includes(nuevoAlias)) {
+       currentAliases.push(nuevoAlias);
+       prod.aliasBusqueda = currentAliases.join(",");
+       await this.productoRepo.save(prod);
+    }
+    return prod;
   }
 
   async createCategoriaGasto(nombre: string) {
