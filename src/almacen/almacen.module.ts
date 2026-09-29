@@ -9,4 +9,6 @@ import { AlmacenController } from './almacen.controller';
   controllers: [AlmacenController],
   providers: [AlmacenService],
 })
-export class AlmacenModule {}
+export class AlmacenModule {
+  
+}
