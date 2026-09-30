@@ -6,13 +6,13 @@ export class PosConfiguracion {
   @PrimaryGeneratedColumn({ name: 'id_config' })
   idConfig: number;
 
-  @Column({ name: 'nombre_empresa', length: 255, default: 'AUP POS' })
+  @Column({ name: 'nombre_empresa', length: 255, default: 'AUP POS', charset: 'utf8mb4', collation: 'utf8mb4_unicode_ci' })
   nombreEmpresa: string;
 
   @Column({ name: 'rfc_empresa', length: 20, nullable: true })
   rfcEmpresa: string;
 
-  @Column({ type: 'text', name: 'mensaje_ticket', nullable: true })
+  @Column({ type: 'text', name: 'mensaje_ticket', nullable: true, charset: 'utf8mb4', collation: 'utf8mb4_unicode_ci' })
   mensajeTicket: string;
 
   @Column({ name: 'impresora_activa', length: 100, nullable: true })
@@ -27,7 +27,7 @@ export class PosConfiguracion {
   @Column({ name: 'imprimir_logo', type: 'boolean', default: false })
   imprimirLogo: boolean;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ length: 255, nullable: true, charset: 'utf8mb4', collation: 'utf8mb4_unicode_ci' })
   direccion: string;
 
   @Column({ length: 20, nullable: true })

@@ -131,6 +131,7 @@ import { PosModule } from './pos/pos.module';
         username: configService.get<string>('DB_USER') || 'root',
         password: configService.get<string>('DB_PASSWORD') || '',
         database: configService.get<string>('DB_NAME') || 'apicultores2026_dev',
+          charset: 'utf8mb4',
         autoLoadEntities: true,
         synchronize: true,
         extra: {
